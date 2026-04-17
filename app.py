@@ -23,12 +23,12 @@ MENU_DATA = {
         {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True}, {"name": "里肌肉蛋餅", "price": 50, "can_add": True}, 
         {"name": "厚切牛肉蛋餅", "price": 60, "can_add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
-    "泡麵系列 (2包泡麵)": [
+    "泡麵系列": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True}, {"name": "起司魂炒泡麵", "price": 75, "can_add": True}, 
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True}, {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True}, 
         {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True}
     ],
-    "炒麵系列 (200G)": [
+    "炒麵系列": [
         {"name": "蘑菇炒麵", "price": 55, "can_add": True}, {"name": "黑胡椒炒麵", "price": 55, "can_add": True}, 
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True}, {"name": "起司魂炒麵", "price": 75, "can_add": True}, 
         {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True}, {"name": "經典沙茶炒麵", "price": 75, "can_add": True}
@@ -39,7 +39,7 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_veg": False}, 
+        {"name": "煎蛋吐司 (無生菜番茄)", "price": 35, "can_add": True, "no_veg": False}, 
         {"name": "火腿吐司 (有生菜、番茄)", "price": 40, "can_add": True, "no_veg": True}, 
         {"name": "培根吐司 (有生菜、番茄)", "price": 40, "can_add": True, "no_veg": True}, 
         {"name": "麥香雞吐司 (有生菜、番茄)", "price": 40, "can_add": True, "no_veg": True}, 
@@ -72,7 +72,15 @@ def ensure_session():
 @app.route("/")
 def index():
     cart = session.get('cart', [])
-    return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart))
+    table_from_url = request.args.get('table')
+    if table_from_url:
+        session['order_info'] = {"type": "內用", "table": table_from_url}
+    
+    return render_template_string(INDEX_HTML, 
+                                menu=MENU_DATA, 
+                                cart_len=len(cart), 
+                                total=sum(i['price'] for i in cart),
+                                table_id=table_from_url)
 
 @app.route("/update_info", methods=["POST"])
 def update_info():
@@ -127,7 +135,7 @@ def delete_order():
     history = [h for h in history if h['id'] != order_id]
     return jsonify({"status": "deleted"})
 
-# --- HTML 模板區 ---
+# --- HTML 模板 ---
 
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>晨食麵所</title><style>
@@ -147,90 +155,11 @@ body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bot
 .footer{position:fixed;bottom:0;left:0;right:0;background:#333;color:white;padding:12px;display:flex;justify-content:space-between;align-items:center;z-index:100}
 </style>
 <script>
-let selectedOptions={}; let currentTable = ""; let pressTimer;
+let selectedOptions={}; let currentTable = "{{ table_id if table_id else '' }}"; let pressTimer;
 function startHold(){ pressTimer = setTimeout(() => { let p = prompt("管理密碼："); if(p) location.href="/boss?pw="+p; }, 3000); }
 function endHold(){ clearTimeout(pressTimer); }
-function setOrderType(t,b){ fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=${currentTable}`}); document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.getElementById('table-select').style.display=(t==='內用')?'block':'none'; }
+function setOrderType(t,b){ fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=${currentTable}`}); document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.getElementById('table-select').style.display=(t==='內用' && !'{{ table_id }}')?'block':'none'; }
 function setTable(n,b){ currentTable = n; fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=內用&table=${n}`}); document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }
 function addToCart(n,p,i){
     let fn=n, fp=p;
-    Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')){fn+='+'+selectedOptions[k].name;fp+=selectedOptions[k].price;}});
-    fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`name=${encodeURIComponent(fn)}&price=${fp}`})
-    .then(r=>r.json()).then(d=>{
-        document.getElementById('c-count').innerText=d.count;
-        document.getElementById('c-total').innerText=d.total;
-        document.querySelectorAll(`[data-item="${i}"]`).forEach(x=>x.classList.remove('active'));
-        Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')) delete selectedOptions[k];});
-    });
-}
-function toggleOpt(i,n,p,b){
-    let k=i+'_'+n;
-    if(selectedOptions[k]){delete selectedOptions[k]; b.classList.remove('active');}
-    else{selectedOptions[k]={name:n,price:p}; b.classList.add('active');}
-}
-</script></head>
-<body>
-<div class="header" onmousedown="startHold()" onmouseup="endHold()" ontouchstart="startHold()" ontouchend="endHold()">🍜 晨食麵所 (長按3秒進入管理)</div>
-<div class="order-setup">用餐方式：<button class="type-btn active" onclick="setOrderType('外帶', this)">🥡 外帶</button><button class="type-btn" onclick="setOrderType('內用', this)">🍽️ 內用</button>
-<div id="table-select" style="display:none;margin-top:10px;">桌號：{% for n in range(1, 6) %}<button class="table-btn" onclick="setTable('{{n}}', this)">{{n}}</button>{% endfor %}</div></div>
-{% for cat, items in menu.items() %}<div class="section-title">{{ cat }}</div>{% for item in items %}
-{% set itemId = loop.index0 ~ cat | replace("/", "") | replace(" ", "") %}
-<div class="item-card"><div class="item-row"><div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div><button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, '{{ itemId }}')">加入 +</button></div>
-{% if item.can_add %}<div class="opt-grid">
-    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加蛋', 15, this)">+ 加蛋</div>
-    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加里肌', 25, this)">+ 加里肌</div>
-    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加起司', 15, this)">+ 加起司</div>
-    {% if item.no_veg %}<div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加生菜', 0, this)" style="color:#e74c3c;">✘ 不加生菜</div><div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加番茄', 0, this)" style="color:#e74c3c;">✘ 不加番茄</div>{% endif %}
-</div>{% endif %}</div>{% endfor %}{% endfor %}
-<div class="footer"><span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span></span><a href="/cart" style="background:#ffbe00; color:#000; padding:8px 15px; border-radius:20px; text-decoration:none; font-weight:bold;">去結帳</a></div>
-</body></html>
-"""
-
-CART_HTML = """
-<div style="padding:20px; font-family:sans-serif; max-width:500px; margin:auto;"><h3>🛒 訂單確認</h3><p>用餐：{{ loc }}</p>
-{% for name, count in counts.items() %}<p>{{ name }} <span style="color:red;">x {{ count }}</span></p>{% endfor %}<hr><h4>總計: ${{ total }}</h4>
-<form action="/clear" method="POST"><button type="submit" style="width:100%; background:#ffbe00; padding:15px; border:none; border-radius:10px; font-weight:bold; font-size:18px;">確認送出並列印</button></form><br><a href="/" style="color:gray;">返回修改</a></div>
-"""
-
-AUTO_PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>列印中</title>
-<style>
-    body{font-family:sans-serif; text-align:center; padding-top:50px;}
-    .ticket{ display:none; }
-    @media print {
-        body * { visibility: hidden; }
-        .ticket, .ticket * { visibility: visible; }
-        .ticket { display: block; position: fixed; left: 0; top: 0; width: 100%; font-size: 24px; padding: 20px; text-align: left; }
-    }
-</style>
-<script>
-    window.onload = function() { window.print(); setTimeout(function(){ location.href='/'; }, 1500); }
-</script></head>
-<body>
-    <h2>✅ 訂單已完成</h2><p>正在彈出列印選單...</p>
-    <div class="ticket">
-        <span style="float:right;">{{ order.time }}</span><b style="font-size:30px;">{{ order.loc }}</b><hr>
-        <div style="margin:20px 0;">{{ order.summary | safe }}</div><hr>
-        <b>總金額：${{ order.price }}</b>
-    </div>
-</body></html>
-"""
-
-BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>後台管理</title><style>
-body{font-family:sans-serif;background:#f4f4f4;padding:10px}
-.order-item{background:white;padding:15px;margin-bottom:10px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
-</style><script>
-function del(id,e){ if(confirm('確定刪除明細？')){ fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`id=${id}`}).then(()=>e.closest('.order-item').style.display='none'); }}
-</script></head>
-<body>
-<div style="display:flex; justify-content:space-between; align-items:center;"><h2>💰 總營收：${{ total }}</h2><button onclick="location.href='/'">回點餐頁</button></div>
-{% for h in logs %}<div class="order-item">
-<span style="float:right; color:gray;">{{ h.time }}</span><b>{{ h.loc }}</b><br>
-<p>{{ h.summary | safe }}</p><b>金額：${{ h.price }}</b>
-<button onclick="del('{{h.id}}',this)" style="float:right; color:green; border:none; background:none; font-weight:bold;">[✔ 完成]</button>
-</div>{% endfor %}</body></html>
-"""
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+    Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')){fn+='+'+
