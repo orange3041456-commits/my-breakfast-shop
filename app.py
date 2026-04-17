@@ -128,11 +128,3 @@ def clear():
         total_income += t
         order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": now}
         history.append(order)
-        session.clear()
-        return render_template_string(PRINT_HTML, order=order)
-    return redirect("/")
-
-@app.route("/boss")
-def boss():
-    if request.args.get("pw") != BOSS_PASSWORD: return "<h1>❌</h1>", 403
-    return render_template_string(BOSS_HTML, total=total_income
