@@ -9,7 +9,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
 
-# --- 完整新增品項後的菜單 ---
+# --- 完整新增品項後的菜單資料 ---
 MENU_DATA = {
     "吃爽組合 (套餐)": [
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "薯條/雞塊 二選一", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
@@ -61,106 +61,4 @@ MENU_DATA = {
         {"name": "培根吐司", "price": 40, "can_add": True},
         {"name": "麥香雞吐司", "price": 40, "can_add": True},
         {"name": "鮪魚吐司", "price": 50, "can_add": True},
-        {"name": "薯餅吐司", "price": 40, "can_add": True},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True}
-    ],
-    "單點小點": [
-        {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
-        {"name": "熱狗(3支)", "price": 20}, {"name": "蔥蛋", "price": 25},
-        {"name": "薯餅", "price": 25}, {"name": "麥克雞塊", "price": 45},
-        {"name": "小肉豆", "price": 40}, {"name": "美式脆條", "price": 45},
-        {"name": "雞柳條", "price": 50}, {"name": "黃金蝦排", "price": 35}
-    ],
-    "飲品 (L)": [
-        {"name": "紅茶", "price": 25}, 
-        {"name": "香醇奶茶", "price": 30}, 
-        {"name": "冷泡茶", "price": 25},
-        {"name": "鮮奶茶", "price": 45}
-    ]
-}
-
-history = []
-total_income = 0
-
-@app.before_request
-def ensure_session():
-    if 'cart' not in session: session['cart'] = []
-    if 'info' not in session: session['info'] = {"type": "外帶", "table": ""}
-
-@app.route("/")
-def index():
-    cart = session.get('cart', [])
-    tid = request.args.get('table')
-    if tid: session['info'] = {"type": "內用", "table": tid}
-    return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart), table_id=tid)
-
-@app.route("/update_info", methods=["POST"])
-def update_info():
-    session['info'] = {"type": request.form.get("type"), "table": request.form.get("table")}
-    return jsonify({"status": "ok"})
-
-@app.route("/add", methods=["POST"])
-def add():
-    temp = session.get('cart', [])
-    temp.append({"name": request.form.get("name"), "price": int(request.form.get("price"))})
-    session['cart'] = temp
-    return jsonify({"count": len(session['cart']), "total": sum(i['price'] for i in session['cart'])})
-
-@app.route("/cart")
-def view_cart():
-    cart = session.get('cart', [])
-    info = session.get('info', {"type": "外帶", "table": ""})
-    t = sum(i['price'] for i in cart)
-    counts = Counter([i['name'] for i in cart])
-    loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
-    return render_template_string(CART_HTML, counts=counts, total=t, loc=loc)
-
-@app.route("/clear", methods=["POST"])
-def clear():
-    global total_income
-    cart = session.get('cart', [])
-    info = session.get('info', {"type": "外帶", "table": ""})
-    t = sum(i['price'] for i in cart)
-    if t > 0:
-        loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
-        counts = Counter([i['name'] for i in cart])
-        now = datetime.now()
-        summary = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
-        total_income += t
-        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": now}
-        history.append(order)
-        session.clear()
-        return render_template_string(PRINT_HTML, order=order)
-    return redirect("/")
-
-@app.route("/boss")
-def boss():
-    if request.args.get("pw") != BOSS_PASSWORD: return "<h1>❌</h1>", 403
-    return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1])
-
-@app.route("/delete_order", methods=["POST"])
-def delete_order():
-    global history
-    oid = request.form.get("id")
-    history = [h for h in history if h['id'] != oid]
-    return jsonify({"status": "ok"})
-
-# --- HTML 介面與 JavaScript 邏輯 ---
-INDEX_HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-    <style>
-        body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px 10px 80px}
-        .header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold}
-        .setup{background:#fff;margin:10px 0;padding:12px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:5px solid #ffbe00}
-        .btn{padding:6px 12px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin:5px 5px 0 0;font-size:13px}
-        .btn.active{background:#ffbe00;color:#000;font-weight:bold}
-        .title{background:#5d4037;color:#fff;padding:6px 10px;border-radius:4px;margin-top:15px;font-weight:bold;font-size:11px}
-        .card{background:#fff;padding:10px;margin:6px 0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-        .row{display:flex;justify-content:space-between;align-items:center}
-        .price{color:#e67e22;font-weight:bold;font-size:14px}
-        .add{background:#ffbe
+        {"name": "薯餅
