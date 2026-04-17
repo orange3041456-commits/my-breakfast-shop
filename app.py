@@ -88,6 +88,14 @@ def send_to_google(loc, total, summary):
     try: requests.post(url, data=payload, timeout=5)
     except: print("Google Error")
 
+@app.route("/get_backup_text")
+def get_backup_text():
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+    output = f"=== 營收備份 ({now_str}) ===\\n今日累計：${total_income}\\n"
+    for h in history[::-1]:
+        output += f"[{h['time'].strftime('%H:%M')}] {h['loc']} - ${h['price']}\\n明細：{h['summary']}\\n\\n"
+    return jsonify({"text": output})
+
 @app.route("/")
 def index():
     cart = session.get('cart', [])
@@ -143,7 +151,7 @@ def delete_order():
     history = [h for h in history if h['id'] != order_id]
     return jsonify({"status": "deleted"})
 
-# --- 修正後的 HTML 模板 ---
+# --- HTML 模板 ---
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>晨食麵所</title><style>
 body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bottom:80px}
@@ -189,4 +197,27 @@ function toggleOpt(i,n,p,b){let k=i+'_'+n;if(selectedOptions[k]){delete selected
                 {% endif %}
             </div>{% endif %}</div>
         {% endif %}
-    {% endfor
+    {% endfor %}
+{% endfor %}
+<div class="footer"><span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span></span><a href="/cart" style="background:#ffbe00; color:000; padding:8px 15px; border-radius:20px; text-decoration:none; font-weight:bold;">去結帳</a></div></body></html>
+"""
+
+CART_HTML = """
+<div style="padding:20px; font-family:sans-serif; max-width:500px; margin:auto;"><h3>🛒 訂單確認</h3><p>用餐：{{ loc }}</p>
+{% for name, count in counts.items() %}<p>{{ name }} <span style="color:red;">x {{ count }}</span></p>{% endfor %}<hr><h4>總計: ${{ total }}</h4>
+<form action="/clear" method="POST"><button type="submit" style="width:100%; background:#ffbe00; padding:15px; border:none; border-radius:10px; font-weight:bold; font-size:18px;">確認送出訂單</button></form><br><a href="/" style="color:gray;">返回修改</a></div>
+"""
+
+BOSS_HTML = """
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:sans-serif;background:#f4f4f4;padding:10px}.order-item{background:white;padding:15px;margin-bottom:10px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}</style>
+<script>
+function backup(){fetch('/get_backup_text').then(r=>r.json()).then(d=>{let t=document.createElement('textarea');t.value=d.text;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('備份已複製！');});}
+function del(id,e){if(confirm('刪除？')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`id=${id}`}).then(()=>e.closest('.order-item').style.display='none');}}
+</script></head>
+<body><h2 style="text-align:center;">💰 總營收：${{ total }}</h2>
+<button onclick="backup()" style="width:100%;padding:10px;background:#3498db;color:white;border:none;border-radius:5px;margin-bottom:20px;">📥 複製今日備份</button>
+{% for h in logs %}<div class="order-item"><span style="float:right;color:gray;">{{ h.time.strftime('%H:%M') }}</span><b>{{ h.loc }}</b><br>{{ h.summary }}<br><b>${{ h.price }}</b><br><button onclick="del('{{h.id}}',this)" style="color:red;border:none;background:none;padding:0;margin-top:10px;">[刪除]</button></div>{% endfor %}</body></html>
+"""
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
