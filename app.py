@@ -9,7 +9,7 @@ app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
-# --- 菜單資料 ---
+# --- 菜單資料 (含加料價格標示) ---
 MENU_DATA = {
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
@@ -55,4 +55,49 @@ MENU_DATA = {
         {"name": "港式蘿蔔糕", "price": 35}, {"name": "雞柳條", "price": 50}, {"name": "黃金蝦排", "price": 35}
     ],
     "飲品 (L)": [
-        {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, {"name": "鮮奶茶", "price":
+        {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, {"name": "鮮奶茶", "price": 45}, {"name": "豆漿紅茶", "price": 40}
+    ]
+}
+
+# 全域變數
+history = []
+total_income = 0
+
+def clean_expired_data():
+    global history
+    # 清理 24 小時前的歷史，但保留 total_income 不重算，以達到刪除明細不扣錢的效果
+    cutoff = datetime.now() - timedelta(hours=24)
+    history = [h for h in history if h['time'] > cutoff]
+
+@app.before_request
+def ensure_session():
+    clean_expired_data()
+    if 'cart' not in session: session['cart'] = []
+    if 'order_info' not in session: session['order_info'] = {"type": "外帶", "table": ""}
+
+@app.route("/ping")
+def ping(): return "pong", 200
+
+def send_to_google(loc, total, summary):
+    # 請確保此 URL 與 Entry ID 正確
+    url = "https://docs.google.com/forms/d/e/1FAIpQLSe5HJ_rQDNaSXNo6l38DYMFErzna8Rmqjp8X61cgPZ2d8QOqA/formResponse"
+    payload = {
+        "entry.303092604": loc,
+        "entry.157627510": total,
+        "entry.1541194223": summary
+    }
+    try: requests.post(url, data=payload, timeout=5)
+    except: pass
+
+@app.route("/get_backup_text")
+def get_backup_text():
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+    output = f"=== 營收備份 ({now_str}) ===\\n今日累計：${total_income}\\n"
+    for h in history[::-1]:
+        output += f"[{h['time'].strftime('%H:%M')}] {h['loc']} - ${h['price']}\\n明細：{h['summary']}\\n\\n"
+    return jsonify({"text": output})
+
+@app.route("/")
+def index():
+    cart = session.get('cart', [])
+    return render_template_string(
