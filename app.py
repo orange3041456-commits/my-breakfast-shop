@@ -127,12 +127,12 @@ def delete_order():
     history = [h for h in history if h['id'] != order_id]
     return jsonify({"status": "deleted"})
 
-# --- HTML 模板 ---
+# --- HTML 模板區 ---
 
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>晨食麵所</title><style>
 body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bottom:80px}
-.header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold;user-select:none;-webkit-user-select:none;}
+.header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold;user-select:none;-webkit-user-select:none;touch-action:none;}
 .order-setup{background:#fff;margin:10px 0;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:5px solid #ffbe00}
 .type-btn, .table-btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin-right:5px;font-size:14px;margin-bottom:5px}
 .type-btn.active, .table-btn.active{background:#ffbe00;color:#000;font-weight:bold}
@@ -148,8 +148,8 @@ body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bot
 </style>
 <script>
 let selectedOptions={}; let currentTable = ""; let pressTimer;
-function startPress(){ pressTimer = window.setTimeout(function(){ let p = prompt("管理密碼："); if(p) location.href="/boss?pw="+p; }, 3000); }
-function cancelPress(){ clearTimeout(pressTimer); }
+function startHold(){ pressTimer = setTimeout(() => { let p = prompt("管理密碼："); if(p) location.href="/boss?pw="+p; }, 3000); }
+function endHold(){ clearTimeout(pressTimer); }
 function setOrderType(t,b){ fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=${currentTable}`}); document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.getElementById('table-select').style.display=(t==='內用')?'block':'none'; }
 function setTable(n,b){ currentTable = n; fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=內用&table=${n}`}); document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }
 function addToCart(n,p,i){
@@ -170,7 +170,7 @@ function toggleOpt(i,n,p,b){
 }
 </script></head>
 <body>
-<div class="header" onmousedown="startPress()" onmouseup="cancelPress()" ontouchstart="startPress()" ontouchend="cancelPress()">🍜 晨食麵所 (長按進入後台)</div>
+<div class="header" onmousedown="startHold()" onmouseup="endHold()" ontouchstart="startHold()" ontouchend="endHold()">🍜 晨食麵所 (長按3秒進入管理)</div>
 <div class="order-setup">用餐方式：<button class="type-btn active" onclick="setOrderType('外帶', this)">🥡 外帶</button><button class="type-btn" onclick="setOrderType('內用', this)">🍽️ 內用</button>
 <div id="table-select" style="display:none;margin-top:10px;">桌號：{% for n in range(1, 6) %}<button class="table-btn" onclick="setTable('{{n}}', this)">{{n}}</button>{% endfor %}</div></div>
 {% for cat, items in menu.items() %}<div class="section-title">{{ cat }}</div>{% for item in items %}
@@ -182,4 +182,55 @@ function toggleOpt(i,n,p,b){
     <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加起司', 15, this)">+ 加起司</div>
     {% if item.no_veg %}<div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加生菜', 0, this)" style="color:#e74c3c;">✘ 不加生菜</div><div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加番茄', 0, this)" style="color:#e74c3c;">✘ 不加番茄</div>{% endif %}
 </div>{% endif %}</div>{% endfor %}{% endfor %}
-<div class="footer"><span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span></span><a href="/cart" style="background:#ffbe00; color:#000; padding:8px 15px; border-radius:2
+<div class="footer"><span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span></span><a href="/cart" style="background:#ffbe00; color:#000; padding:8px 15px; border-radius:20px; text-decoration:none; font-weight:bold;">去結帳</a></div>
+</body></html>
+"""
+
+CART_HTML = """
+<div style="padding:20px; font-family:sans-serif; max-width:500px; margin:auto;"><h3>🛒 訂單確認</h3><p>用餐：{{ loc }}</p>
+{% for name, count in counts.items() %}<p>{{ name }} <span style="color:red;">x {{ count }}</span></p>{% endfor %}<hr><h4>總計: ${{ total }}</h4>
+<form action="/clear" method="POST"><button type="submit" style="width:100%; background:#ffbe00; padding:15px; border:none; border-radius:10px; font-weight:bold; font-size:18px;">確認送出並列印</button></form><br><a href="/" style="color:gray;">返回修改</a></div>
+"""
+
+AUTO_PRINT_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>列印中</title>
+<style>
+    body{font-family:sans-serif; text-align:center; padding-top:50px;}
+    .ticket{ display:none; }
+    @media print {
+        body * { visibility: hidden; }
+        .ticket, .ticket * { visibility: visible; }
+        .ticket { display: block; position: fixed; left: 0; top: 0; width: 100%; font-size: 24px; padding: 20px; text-align: left; }
+    }
+</style>
+<script>
+    window.onload = function() { window.print(); setTimeout(function(){ location.href='/'; }, 1500); }
+</script></head>
+<body>
+    <h2>✅ 訂單已完成</h2><p>正在彈出列印選單...</p>
+    <div class="ticket">
+        <span style="float:right;">{{ order.time }}</span><b style="font-size:30px;">{{ order.loc }}</b><hr>
+        <div style="margin:20px 0;">{{ order.summary | safe }}</div><hr>
+        <b>總金額：${{ order.price }}</b>
+    </div>
+</body></html>
+"""
+
+BOSS_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>後台管理</title><style>
+body{font-family:sans-serif;background:#f4f4f4;padding:10px}
+.order-item{background:white;padding:15px;margin-bottom:10px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+</style><script>
+function del(id,e){ if(confirm('確定刪除明細？')){ fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`id=${id}`}).then(()=>e.closest('.order-item').style.display='none'); }}
+</script></head>
+<body>
+<div style="display:flex; justify-content:space-between; align-items:center;"><h2>💰 總營收：${{ total }}</h2><button onclick="location.href='/'">回點餐頁</button></div>
+{% for h in logs %}<div class="order-item">
+<span style="float:right; color:gray;">{{ h.time }}</span><b>{{ h.loc }}</b><br>
+<p>{{ h.summary | safe }}</p><b>金額：${{ h.price }}</b>
+<button onclick="del('{{h.id}}',this)" style="float:right; color:green; border:none; background:none; font-weight:bold;">[✔ 完成]</button>
+</div>{% endfor %}</body></html>
+"""
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
