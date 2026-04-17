@@ -10,10 +10,12 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 BOSS_PASSWORD = "8888" 
 
 MENU_DATA = {
-    "吃爽組合": [
+    "吃爽組合 (套餐)": [
         {"name": "薯條OR雞塊+飲品", "price": 60, "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
         {"name": "肉蛋吐司+紅茶", "price": 60},
-        {"name": "熱狗(3支)+蛋+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]}
+        {"name": "熱狗(3支)+蛋+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]},
+        {"name": "草莓肉鬆吐司+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]},
+        {"name": "巧克力薯餅吐司+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]}
     ],
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True},
@@ -101,7 +103,7 @@ def delete_order():
     return jsonify({"status": "ok"})
 
 # ------------------------------------------------------------------
-# HTML TEMPLATES
+# HTML 模板
 # ------------------------------------------------------------------
 
 INDEX_HTML = """
@@ -116,4 +118,63 @@ INDEX_HTML = """
         .setup{background:#fff;margin:10px;padding:12px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
         .btn{padding:6px 12px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;margin:5px 5px 0 0}
         .btn.active{background:#ffbe00;color:#000;font-weight:bold}
-        .title{background:#
+        .title{background:#5d4037;color:#fff;padding:6px 15px;font-weight:bold;font-size:12px}
+        .card{background:#fff;padding:12px;margin:8px 10px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+        .row{display:flex;justify-content:space-between;align-items:center}
+        .add{background:#ffbe00;border:none;padding:6px 15px;border-radius:15px;font-weight:bold;cursor:pointer}
+        .grid{margin-top:10px;display:grid;grid-template-columns:repeat(3, 1fr);gap:5px;border-top:1px dashed #eee;padding-top:10px}
+        .opt{background:#f8f9fa;border:1px solid #eee;padding:5px;border-radius:5px;font-size:11px;text-align:center;cursor:pointer;color:#666}
+        .opt.active{background:#5d4037;color:#fff;border-color:#5d4037}
+        .footer{position:fixed;bottom:0;left:0;right:0;background:#333;color:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center}
+    </style>
+    <script>
+        let opts={}; let curT="{{table_id}}";
+        function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
+        function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
+        
+        function buy(n,p,i){
+            let fn=n; let fp=p;
+            Object.keys(opts).forEach(k => { 
+                if(k.indexOf(i+'_')===0){ fn+='+'+opts[k].n; fp+=opts[k].p } 
+            });
+            fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"name="+encodeURIComponent(fn)+"&price="+fp})
+            .then(r=>r.json()).then(d=>{
+                document.getElementById('cc').innerText=d.count;
+                document.getElementById('ct').innerText=d.total;
+                document.querySelectorAll(".opt[data-item='"+i+"']").forEach(x=>x.classList.remove('active'));
+                Object.keys(opts).forEach(k=>{ if(k.indexOf(i+'_')===0) delete opts[k] });
+            });
+        }
+
+        function tgl(i,n,p,b,grp){
+            // 如果有群組編號，先取消該群組內其他的選擇 (達到二選一效果)
+            if(grp){ 
+                document.querySelectorAll(".opt[data-grp='"+i+"_"+grp+"']").forEach(x=>{ 
+                    if(x!==b){ 
+                        x.classList.remove('active'); 
+                        let otherK = i+'_'+x.getAttribute('data-val');
+                        delete opts[otherK]; 
+                    } 
+                }); 
+            }
+            let k=i+'_'+n; 
+            if(opts[k]){ 
+                delete opts[k]; b.classList.remove('active'); 
+            } else { 
+                opts[k]={n:n,p:p}; b.classList.add('active'); 
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="header">🍜 晨食麵所</div>
+    <div class="setup">
+        {% if table_id %}<b>內用：{{table_id}}桌</b>
+        {% else %}用餐：<button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button><button class="btn type-btn" onclick="setT('內用',this)">內用</button>
+        <div id="ts" style="display:none;margin-top:10px">桌號：{% for n in range(1,6) %}<button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>{% endfor %}</div>{% endif %}
+    </div>
+    {% for cat,items in menu.items() %}
+    <div class="title">{{cat}}</div>
+    {% for item in items %}{% set iid = "id" ~ loop.index ~ cat[0] %}
+    <div class="card">
+        <div class="row"><div><strong>{{item.name}}</strong><br><span style="color:#e67e22">$ {{item.price}}</span></div><button class="add" onclick="buy('{{item.name}}',{{item.price}},'
