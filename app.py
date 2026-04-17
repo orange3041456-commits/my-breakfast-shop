@@ -8,10 +8,8 @@ app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
-# --- 密碼設定 ---
 BOSS_PASSWORD = "8888" 
 
-# --- 完整菜單資料 (已更新份量標記) ---
 MENU_DATA = {
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
@@ -75,12 +73,7 @@ def index():
     table_from_url = request.args.get('table')
     if table_from_url:
         session['order_info'] = {"type": "內用", "table": table_from_url}
-    
-    return render_template_string(INDEX_HTML, 
-                                menu=MENU_DATA, 
-                                cart_len=len(cart), 
-                                total=sum(i['price'] for i in cart),
-                                table_id=table_from_url)
+    return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart), table_id=table_from_url)
 
 @app.route("/update_info", methods=["POST"])
 def update_info():
@@ -124,8 +117,7 @@ def clear():
 @app.route("/boss")
 def boss():
     pw = request.args.get("pw")
-    if pw != BOSS_PASSWORD:
-        return "<h1>❌ 密碼錯誤</h1><br><a href='/'>回首頁</a>", 403
+    if pw != BOSS_PASSWORD: return "<h1>❌ 密碼錯誤</h1>", 403
     return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1])
 
 @app.route("/delete_order", methods=["POST"])
@@ -135,83 +127,72 @@ def delete_order():
     history = [h for h in history if h['id'] != order_id]
     return jsonify({"status": "deleted"})
 
-# --- HTML 模板 ---
-
 INDEX_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>晨食麵所</title><style>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><title>晨食麵所</title><style>
 body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bottom:80px}
-.header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold;user-select:none;-webkit-user-select:none;touch-action:none;}
+.header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold;user-select:none;-webkit-user-select:none}
 .order-setup{background:#fff;margin:10px 0;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:5px solid #ffbe00}
-.type-btn, .table-btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin-right:5px;font-size:14px;margin-bottom:5px}
-.type-btn.active, .table-btn.active{background:#ffbe00;color:#000;font-weight:bold}
-.section-title{background:#5d4037;color:white;padding:8px 12px;border-radius:4px;margin-top:20px;font-size:16px;font-weight:bold}
-.item-card{background:white;padding:12px;margin:8px 0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.type-btn,.table-btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin:5px 5px 0 0;font-size:14px}
+.type-btn.active,.table-btn.active{background:#ffbe00;color:#000;font-weight:bold}
+.section-title{background:#5d4037;color:#fff;padding:8px 12px;border-radius:4px;margin-top:20px;font-size:16px;font-weight:bold}
+.item-card{background:#fff;padding:12px;margin:8px 0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .item-row{display:flex;justify-content:space-between;align-items:center}
 .price{color:#e67e22;font-weight:bold}
 .add-btn{background:#ffbe00;border:none;padding:8px 14px;border-radius:15px;font-weight:bold;cursor:pointer}
 .opt-grid{margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-top:1px dashed #eee;padding-top:10px}
 .opt-btn{background:#f8f9fa;border:1px solid #ddd;padding:8px 0;border-radius:6px;font-size:11px;text-align:center;cursor:pointer;color:#666}
-.opt-btn.active{background:#5d4037;color:white}
-.footer{position:fixed;bottom:0;left:0;right:0;background:#333;color:white;padding:12px;display:flex;justify-content:space-between;align-items:center;z-index:100}
+.opt-btn.active{background:#5d4037;color:#fff}
+.footer{position:fixed;bottom:0;left:0;right:0;background:#333;color:#fff;padding:12px;display:flex;justify-content:space-between;align-items:center;z-index:100}
 </style>
 <script>
-let selectedOptions={}; let currentTable = "{{ table_id if table_id else '' }}"; let pressTimer;
-function startHold(){ pressTimer = setTimeout(() => { let p = prompt("管理密碼："); if(p) location.href="/boss?pw="+p; }, 3000); }
-function endHold(){ clearTimeout(pressTimer); }
-function setOrderType(t,b){ fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=${currentTable}`}); document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); let ts = document.getElementById('table-select'); if(ts){ ts.style.display=(t==='內用')?'block':'none'; }}
-function setTable(n,b){ currentTable = n; fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=內用&table=${n}`}); document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }
-function addToCart(n,p,i){
-    let fn=n, fp=p;
-    Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')){fn+='+'+selectedOptions[k].name;fp+=selectedOptions[k].price;}});
-    fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`name=${encodeURIComponent(fn)}&price=${fp}`})
-    .then(r=>r.json()).then(d=>{
-        document.getElementById('c-count').innerText=d.count;
-        document.getElementById('c-total').innerText=d.total;
-        document.querySelectorAll(`[data-item="${i}"]`).forEach(x=>x.classList.remove('active'));
-        Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')) delete selectedOptions[k];});
-    });
-}
-function toggleOpt(i,n,p,b){
-    let k=i+'_'+n;
-    if(selectedOptions[k]){delete selectedOptions[k]; b.classList.remove('active');}
-    else{selectedOptions[k]={name:n,price:p}; b.classList.add('active');}
-}
+let opts={};let curTable="{{table_id if table_id else ''}}";let timer;
+function startHold(){timer=setTimeout(()=>{let p=prompt("管理密碼：");if(p)location.href="/boss?pw="+p},3000)}
+function endHold(){clearTimeout(timer)}
+function setOrderType(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=${curTable}`});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');let ts=document.getElementById('table-select');if(ts)ts.style.display=(t==='內用')?'block':'none'}
+function setTable(n,b){curTable=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=內用&table=${n}`});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
+function addToCart(n,p,i){let fn=n,fp=p;Object.keys(opts).forEach(k=>{if(k.startsWith(i+'_')){fn+='+'+opts[k].name;fp+=opts[k].price}});fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`name=${encodeURIComponent(fn)}&price=${fp}`}).then(r=>r.json()).then(d=>{document.getElementById('c-count').innerText=d.count;document.getElementById('c-total').innerText=d.total;document.querySelectorAll(`[data-item="${i}"]`).forEach(x=>x.classList.remove('active'));Object.keys(opts).forEach(k=>{if(k.startsWith(i+'_'))delete opts[k]})})}
+function toggleOpt(i,n,p,b){let k=i+'_'+n;if(opts[k]){delete opts[k];b.classList.remove('active')}else{opts[k]={name:n,price:p};b.classList.add('active')}}
 </script></head>
 <body>
 <div class="header" onmousedown="startHold()" onmouseup="endHold()" ontouchstart="startHold()" ontouchend="endHold()">🍜 晨食麵所</div>
 <div class="order-setup">
-    {% if table_id %}
-    <div style="text-align:center; font-weight:bold; color:#5d4037;">您好！歡迎內用，桌號：{{ table_id }}</div>
-    {% else %}
-    用餐方式：<button class="type-btn active" onclick="setOrderType('外帶', this)">🥡 外帶</button><button class="type-btn" onclick="setOrderType('內用', this)">🍽️ 內用</button>
-    <div id="table-select" style="display:none;margin-top:10px;">桌號：{% for n in range(1, 6) %}<button class="table-btn" onclick="setTable('{{n}}', this)">{{n}}</button>{% endfor %}</div>
-    {% endif %}
-</div>
-{% for cat, items in menu.items() %}<div class="section-title">{{ cat }}</div>{% for item in items %}
-{% set itemId = loop.index0 ~ cat | replace("/", "") | replace(" ", "") | replace("(", "") | replace(")", "") %}
-<div class="item-card"><div class="item-row"><div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div><button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, '{{ itemId }}')">加入 +</button></div>
+{% if table_id %}<div style="text-align:center;font-weight:bold;color:#5d4037">歡迎內用，桌號：{{table_id}}</div>
+{% else %}用餐：<button class="type-btn active" onclick="setOrderType('外帶',this)">外帶</button><button class="type-btn" onclick="setOrderType('內用',this)">內用</button>
+<div id="table-select" style="display:none;margin-top:10px">桌號：{% for n in range(1,6) %}<button class="table-btn" onclick="setTable('{{n}}',this)">{{n}}</button>{% endfor %}</div>{% endif %}</div>
+{% for cat,items in menu.items() %}<div class="section-title">{{cat}}</div>{% for item in items %}
+{% set iid=loop.index0 ~ cat|replace("/","")|replace(" ","")|replace("(","")|replace(")","") %}
+<div class="item-card"><div class="item-row"><div><strong>{{item.name}}</strong><br><span class="price">${{item.price}}</span></div><button class="add-btn" onclick="addToCart('{{item.name}}',{{item.price}},'{{iid}}')">加入 +</button></div>
 {% if item.can_add %}<div class="opt-grid">
-    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加蛋', 15, this)">+ 加蛋 ($15)</div>
-    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加里肌', 25, this)">+ 加里肌 ($25)</div>
-    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加起司', 15, this)">+ 加起司 ($15)</div>
-    {% if item.no_veg %}<div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加生菜', 0, this)" style="color:#e74c3c;">✘ 不加生菜</div><div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加番茄', 0, this)" style="color:#e74c3c;">✘ 不加番茄</div>{% endif %}
+<div class="opt-btn" data-item="{{iid}}" onclick="toggleOpt('{{iid}}','加蛋',15,this)">+ 加蛋 ($15)</div>
+<div class="opt-btn" data-item="{{iid}}" onclick="toggleOpt('{{iid}}','加里肌',25,this)">+ 加里肌 ($25)</div>
+<div class="opt-btn" data-item="{{iid}}" onclick="toggleOpt('{{iid}}','加起司',15,this)">+ 加起司 ($15)</div>
+{% if item.no_veg %}<div class="opt-btn" data-item="{{iid}}" onclick="toggleOpt('{{iid}}','不加生菜',0,this)" style="color:#e74c3c">✘ 不加生菜</div><div class="opt-btn" data-item="{{iid}}" onclick="toggleOpt('{{iid}}','不加番茄',0,this)" style="color:#e74c3c">✘ 不加番茄</div>{% endif %}
 </div>{% endif %}</div>{% endfor %}{% endfor %}
-<div class="footer"><span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span></span><a href="/cart" style="background:#ffbe00; color:#000; padding:8px 15px; border-radius:20px; text-decoration:none; font-weight:bold;">去結帳</a></div>
+<div class="footer"><span>已點 <span id="c-count">{{cart_len}}</span> 項 | $<span id="c-total">{{total}}</span></span><a href="/cart" style="background:#ffbe00;color:#000;padding:8px 15px;border-radius:20px;text-decoration:none;font-weight:bold">去結帳</a></div>
 </body></html>
 """
 
 CART_HTML = """
-<div style="padding:20px; font-family:sans-serif; max-width:500px; margin:auto;"><h3>🛒 訂單確認</h3><p>用餐：{{ loc }}</p>
-{% for name, count in counts.items() %}<p>{{ name }} <span style="color:red;">x {{ count }}</span></p>{% endfor %}<hr><h4>總計: ${{ total }}</h4>
-<form action="/clear" method="POST"><button type="submit" style="width:100%; background:#ffbe00; padding:15px; border:none; border-radius:10px; font-weight:bold; font-size:18px;">確認送出並列印</button></form><br><a href="/" style="color:gray;">返回修改</a></div>
+<div style="padding:20px;font-family:sans-serif;max-width:500px;margin:auto"><h3>🛒 訂單確認</h3><p>用餐：{{loc}}</p>
+{% for n,c in counts.items() %}<p>{{n}} <span style="color:red">x {{c}}</span></p>{% endfor %}<hr><h4>總計: ${{total}}</h4>
+<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;font-size:18px">確認送出並列印</button></form><br><a href="/" style="color:gray">返回修改</a></div>
 """
 
 AUTO_PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>列印中</title>
-<style>
-    body{font-family:sans-serif; text-align:center; padding-top:50px;}
-    .ticket{ display:none; }
-    @media print {
-        body * { visibility: hidden; }
-        .ticket, .ticket * { visibility: visible; }
-        .ticket { display: block; position: fixed; left: 0; top
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>列印中</title><style>
+body{font-family:sans-serif;text-align:center;padding-top:50px}.ticket{display:none}
+@media print{body *{visibility:hidden}.ticket,.ticket *{visibility:visible}.ticket{display:block;position:fixed;left:0;top:0;width:100%;font-size:24px;padding:20px}}
+</style><script>window.onload=()=>{window.print();setTimeout(()=>{location.href='/'},1500)}</script></head>
+<body><h2>✅ 訂單已完成</h2><div class="ticket"><span style="float:right">{{order.time}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
+"""
+
+BOSS_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>後台</title><style>
+body{font-family:sans-serif;background:#f4f4f4;padding:10px}.order-item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px}
+</style><script>function del(id,e){if(confirm('完成？')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`id=${id}`}).then(()=>e.closest('.order-item').style.display='none')}}</script></head>
+<body><div style="display:flex;justify-content:space-between"><h2>💰 營收：${{total}}</h2><button onclick="location.href='/'">回首頁</button></div>
+{% for h in logs %}<div class="order-item"><span style="float:right;color:gray">{{h.time}}</span><b>{{h.loc}}</b><br><p>{{h.summary|safe}}</p><b>${{h.price}}</b><button onclick="del('{{h.id}}',this)" style="float:right;color:green;border:none;background:none;font-weight:bold">[完成]</button></div>{% endfor %}</body></html>
+"""
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
