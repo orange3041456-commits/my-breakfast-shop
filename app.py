@@ -9,7 +9,7 @@ app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
-# --- 菜單資料 ---
+# --- 菜單資料：已將泡麵與炒麵拆分為獨立大類別 ---
 MENU_DATA = {
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
@@ -21,14 +21,14 @@ MENU_DATA = {
         {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True}, {"name": "里肌肉蛋餅", "price": 50, "can_add": True}, 
         {"name": "厚切牛肉蛋餅", "price": 60, "can_add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
-    "泡麵 / 炒麵": [
-        {"type": "label", "text": "泡麵系列 (2包泡麵)"},
+    "泡麵系列 (2包泡麵)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True}, 
         {"name": "起司魂炒泡麵", "price": 75, "can_add": True}, 
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True}, 
         {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True}, 
-        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True}, 
-        {"type": "label", "text": "炒麵系列 (200G)"},
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True}
+    ],
+    "炒麵系列 (200G)": [
         {"name": "蘑菇炒麵", "price": 55, "can_add": True}, 
         {"name": "黑胡椒炒麵", "price": 55, "can_add": True}, 
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True},
@@ -160,7 +160,6 @@ body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bot
 .type-btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin-right:5px;font-size:14px}
 .type-btn.active{background:#ffbe00;color:#000;font-weight:bold}
 .section-title{background:#5d4037;color:white;padding:8px 12px;border-radius:4px;margin-top:20px;font-size:16px;font-weight:bold}
-.sub-label{background:#eee;color:#555;padding:4px 10px;margin:10px 0 5px 0;border-radius:4px;font-size:13px;border-left:4px solid #3498db}
 .item-card{background:white;padding:12px;margin:8px 0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .item-row{display:flex;justify-content:space-between;align-items:center}
 .price{color:#e67e22;font-weight:bold}
@@ -182,21 +181,17 @@ function toggleOpt(i,n,p,b){let k=i+'_'+n;if(selectedOptions[k]){delete selected
 {% for cat, items in menu.items() %}
     <div class="section-title">{{ cat }}</div>
     {% for item in items %}
-        {% if item.type == "label" %}
-            <div class="sub-label">{{ item.text }}</div>
-        {% else %}
-            {% set itemId = loop.index0 ~ cat %}
-            <div class="item-card"><div class="item-row"><div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div><button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, '{{ itemId }}')">加入 +</button></div>
-            {% if item.can_add %}<div class="opt-grid">
-                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加蛋', 15, this)">+ 加蛋</div>
-                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加里肌', 25, this)">+ 加里肌</div>
-                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加起司', 15, this)">+ 加起司</div>
-                {% if item.no_veg %}
-                    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加生菜', 0, this)" style="color:#e74c3c;">✘ 不加生菜</div>
-                    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加番茄', 0, this)" style="color:#e74c3c;">✘ 不加番茄</div>
-                {% endif %}
-            </div>{% endif %}</div>
-        {% endif %}
+        {% set itemId = loop.index0 ~ cat %}
+        <div class="item-card"><div class="item-row"><div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div><button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, '{{ itemId }}')">加入 +</button></div>
+        {% if item.can_add %}<div class="opt-grid">
+            <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加蛋', 15, this)">+ 加蛋</div>
+            <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加里肌', 25, this)">+ 加里肌</div>
+            <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加起司', 15, this)">+ 加起司</div>
+            {% if item.no_veg %}
+                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加生菜', 0, this)" style="color:#e74c3c;">✘ 不加生菜</div>
+                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加番茄', 0, this)" style="color:#e74c3c;">✘ 不加番茄</div>
+            {% endif %}
+        </div>{% endif %}</div>
     {% endfor %}
 {% endfor %}
 <div class="footer"><span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span></span><a href="/cart" style="background:#ffbe00; color:000; padding:8px 15px; border-radius:20px; text-decoration:none; font-weight:bold;">去結帳</a></div></body></html>
