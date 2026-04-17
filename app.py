@@ -153,20 +153,20 @@ INDEX_HTML = """
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
     <style>
         body { font-family: sans-serif; background: #fdfaf0; margin: 0; padding: 10px 10px 80px; }
-        .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; }
-        .setup { background: #fff; margin: 10px 0; padding: 12px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 5px solid #ffbe00; }
-        .btn { padding: 6px 12px; border: 1px solid #ddd; border-radius: 20px; background: #f8f9fa; cursor: pointer; margin: 5px 5px 0 0; font-size: 13px; }
+        .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; font-size: 20px; }
+        .setup { background: #fff; margin: 10px 0; padding: 12px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 5px solid #ffbe00; font-size: 16px; }
+        .btn { padding: 8px 16px; border: 1px solid #ddd; border-radius: 20px; background: #f8f9fa; cursor: pointer; margin: 5px 5px 0 0; font-size: 15px; }
         .btn.active { background: #ffbe00; color: #000; font-weight: bold; }
-        .title { background: #5d4037; color: #fff; padding: 6px 10px; border-radius: 4px; margin-top: 15px; font-weight: bold; font-size: 11px; }
-        .card { background: #fff; padding: 10px; margin: 6px 0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .title { background: #5d4037; color: #fff; padding: 8px 12px; border-radius: 4px; margin-top: 15px; font-weight: bold; font-size: 14px; }
+        .card { background: #fff; padding: 12px; margin: 8px 0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .row { display: flex; justify-content: space-between; align-items: center; }
-        .price { color: #e67e22; font-weight: bold; font-size: 14px; }
-        .add { background: #ffbe00; border: none; padding: 6px 12px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 13px; }
-        .grid { margin-top: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; border-top: 1px dashed #eee; padding-top: 8px; }
-        .opt { background: #f8f9fa; border: 1px solid #eee; padding: 3px 1px; border-radius: 4px; font-size: 9px; text-align: center; color: #666; cursor: pointer; line-height: 1.2; }
+        .price { color: #e67e22; font-weight: bold; font-size: 18px; }
+        .add { background: #ffbe00; border: none; padding: 8px 16px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .grid { margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; border-top: 1px dashed #eee; padding-top: 10px; }
+        .opt { background: #f8f9fa; border: 1px solid #eee; padding: 6px 2px; border-radius: 6px; font-size: 13px; text-align: center; color: #666; cursor: pointer; line-height: 1.2; }
         .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; }
-        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 12px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-        .sub-text { font-size: 10px; color: #e67e22; display: block; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; font-size: 18px; }
+        .sub-text { font-size: 12px; color: #e67e22; display: block; margin-top: 2px; }
     </style>
     <script>
         let opts={}; let curT="{{table_id if table_id else ''}}"; let tmr;
@@ -174,91 +174,4 @@ INDEX_HTML = """
         function end(){clearTimeout(tmr)}
         function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');let s=document.getElementById('ts');if(s)s.style.display=(t==='內用')?'block':'none'}
         function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
-        function buy(n,p,i){let fn=n,fp=p;Object.keys(opts).forEach(function(k){if(k.indexOf(i+'_')===0){fn+='+'+opts[k].n; fp+=opts[k].p}});fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"name="+encodeURIComponent(fn)+"&price="+fp}).then(r=>r.json()).then(d=>{document.getElementById('cc').innerText=d.count;document.getElementById('ct').innerText=d.total;document.querySelectorAll(".opt[data-item='"+i+"']").forEach(x=>x.classList.remove('active'));Object.keys(opts).forEach(k=>{if(k.indexOf(i+'_')===0)delete opts[k]})})}
-        function tgl(i,n,p,b,grp){if(grp){document.querySelectorAll(".opt[data-grp='"+i+"_"+grp+"']").forEach(function(x){if(x!==b){x.classList.remove('active'); delete opts[i+'_'+x.getAttribute('data-val')]}})}let k=i+'_'+n;if(opts[k]){delete opts[k]; b.classList.remove('active')}else{opts[k]={n:n,p:p}; b.classList.add('active')}}
-    </script>
-</head>
-<body>
-    <div class="header" onmousedown="start()" onmouseup="end()" ontouchstart="start()" ontouchend="end()">🍜 晨食麵所</div>
-    <div class="setup">
-        {% if table_id %}
-            <div style="text-align:center;font-weight:bold;color:#5d4037">內用：{{table_id}}桌</div>
-        {% else %}
-            用餐方式：
-            <button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button>
-            <button class="btn type-btn" onclick="setT('內用',this)">內用</button>
-            <div id="ts" style="display:none;margin-top:10px">
-                桌號：
-                {% for n in range(1,11) %}
-                    <button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>
-                {% endfor %}
-            </div>
-        {% endif %}
-    </div>
-    {% for cat,items in menu.items() %}
-        <div class="title">{{cat}}</div>
-        {% for item in items %}
-            {% set iid = "id" ~ loop.index ~ cat[0] %}
-            <div class="card">
-                <div class="row">
-                    <div>
-                        <strong style="font-size:14px">{{item.name}}</strong>
-                        {% if item.sub %}<span class="sub-text">{{item.sub}}</span>{% endif %}
-                        <br><span class="price">${{item.price}}</span>
-                    </div>
-                    <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}')">加入 +</button>
-                </div>
-                <div class="grid">
-                    {% if item.can_add %}
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div>
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>
-                        {% if item.no_v %}
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不要生菜',0,this)" style="color:#e67e22">✘生菜</div>
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不要番茄',0,this)" style="color:#e67e22">✘番茄</div>
-                        {% endif %}
-                        {% if item.can_spicy %}
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:#d35400">🔥辣</div>
-                        {% endif %}
-                    {% endif %}
-                    {% if item.is_jam %}
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥</div>
-                    {% endif %}
-                    {% if item.opts %}
-                        {% for group in item.opts %}
-                            {% set gidx=loop.index %}
-                            {% for o in group %}
-                                <div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>
-                            {% endfor %}
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-        {% endfor %}
-    {% endfor %}
-    <div class="footer">
-        <span>已點 <span id="cc">{{cart_len}}</span> | $<span id="ct">{{total}}</span></span>
-        <a href="/cart" style="background:#ffbe00;color:#000;padding:8px 15px;border-radius:20px;text-decoration:none;font-weight:bold">去結帳</a>
-    </div>
-</body>
-</html>
-"""
-
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0}</style></head>
-<body><div style="max-width:500px;margin:auto"><h3>🛒 訂單確認</h3><p>用餐：{{loc}}</p>{% for n,c in counts.items() %}<p>{{n}} <span style="color:red">x {{c}}</span></p>{% endfor %}<hr><h4>總計: ${{total}}</h4><form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;font-size:18px">確認送出訂單</button></form><br><a href="/" style="color:gray">返回修改</a></div></body></html>
-"""
-
-PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;text-align:center;padding-top:50px}.t{display:none}@media print{body *{visibility:hidden}.t,.t *{visibility:visible}.t{display:block;position:fixed;left:0;top:0;width:100%;font-size:24px;padding:20px}}</style><script>window.onload=function(){window.print();setTimeout(function(){location.href='/'},1500)}</script></head>
-<body><h2>✅ 訂單已完成</h2><div class="t"><span style="float:right">{{order.time.strftime('%H:%M')}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
-"""
-
-BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;background:#f4f4f4;padding:10px}.o{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px}</style><script>function del(id,e){if(confirm('完成？')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(function(){e.closest('.o').style.display='none'})}}</script></head>
-<body><div style="display:flex;justify-content:space-between"><h2>💰 營收：${{total}}</h2><button onclick="location.href='/'">回首頁</button></div>{% for h in logs %}<div class="o"><span style="float:right;color:gray">{{h.time.strftime('%H:%M')}}</span><b>{{h.loc}}</b><br><p>{{h.summary|safe}}</p><b>${{h.price}}</b><button onclick="del('{{h.id}}',this)" style="float:right;color:green;border:none;background:none;font-weight:bold">[完成]</button></div>{% endfor %}</body></html>
-"""
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+        function buy(n,p,i){let fn=n,fp=p;Object.keys(opts).forEach(function(k){if(k.indexOf(i+'_')===0){fn+='+'+opts[k].n; fp+=opts[k].p}});fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"name="+encodeURIComponent(fn)+"&price="+fp}).then(r
