@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, jsonify
+from Flask import Flask, render_template_string, request, jsonify
 import os
 
 app = Flask(__name__)
@@ -61,7 +61,7 @@ cart = []
 history = []
 total_income = 0
 
-HTML = """
+HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -87,8 +87,6 @@ HTML = """
         function addToCart(name, price, element) {
             let finalName = name;
             let finalPrice = price;
-            
-            // 檢查有沒有加點選項 (針對泡麵/炒麵)
             if (element) {
                 const card = element.closest('.item-card');
                 const opts = card.querySelectorAll('.opt-btn.active');
@@ -97,7 +95,6 @@ HTML = """
                     finalPrice += parseInt(opt.dataset.price);
                 });
             }
-
             fetch('/add', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -113,7 +110,6 @@ HTML = """
                 setTimeout(() => { msg.style.display = 'none'; }, 1000);
             });
         }
-
         function toggleOpt(btn) {
             btn.classList.toggle('active');
         }
@@ -122,7 +118,6 @@ HTML = """
 <body>
     <div id="msg-box" class="msg"></div>
     <div class="header">🍳 活力晨食點餐</div>
-    
     {% for cat, items in menu.items() %}
     <div class="section-title">{{ cat }}</div>
     {% for item in items %}
@@ -131,7 +126,6 @@ HTML = """
             <div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div>
             <button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, this)">加入 +</button>
         </div>
-        
         {% if item.can_add %}
         <div class="opt-box">
             <span style="font-size: 12px; color: #888; width: 100%;">加點選項：</span>
@@ -143,7 +137,6 @@ HTML = """
     </div>
     {% endfor %}
     {% endfor %}
-
     <div class="footer-cart">
         <span>已點 <span id="cart-count">{{ cart_len }}</span> 項 | 共 $<span id="cart-total">{{ total }}</span></span>
         <a href="/cart" class="checkout-link">看清單/結帳</a>
@@ -155,7 +148,7 @@ HTML = """
 @app.route("/")
 def index():
     t = sum(i['price'] for i in cart)
-    return render_template_string(HTML, menu=MENU, cart_len=len(cart), total=t)
+    return render_template_string(HTML_TEMPLATE, menu=MENU, cart_len=len(cart), total=t)
 
 @app.route("/add", methods=["POST"])
 def add():
@@ -171,4 +164,47 @@ def view_cart():
     <div style="padding:20px; font-family:sans-serif;">
         <h2>🛒 我的點餐清單</h2>
         {% for i in cart %}
-        <div style="display:flex; justify-content:space-between; padding:10px
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+            <span>{{ i.name }}</span><span>${{ i.price }}</span>
+        </div>
+        {% endfor %}
+        <hr>
+        <h3 style="text-align:right;">總金額：${{ total }}</h3>
+        <a href="/clear" style="display:block; background:#ffbe00; padding:15px; text-align:center; color:black; text-decoration:none; border-radius:10px; font-weight:bold;">確認送出訂單</a>
+        <br><a href="/" style="display:block; text-align:center; color:gray;">繼續加點</a>
+    </div>
+    """
+    return render_template_string(cart_page, cart=cart, total=t)
+
+@app.route("/clear")
+def clear():
+    global total_income
+    t = sum(i['price'] for i in cart)
+    if t > 0:
+        total_income += t
+        items_str = " | ".join([i['name'] for i in cart])
+        history.append(f"收入: ${t} | 品項: {items_str}")
+        cart.clear()
+        return "<div style='text-align:center; padding:50px; font-family:sans-serif;'><h1>🎉 訂單已送出！</h1><p>請至櫃檯結帳取餐。</p><br><a href='/'>回首頁</a></div>"
+    return redirect("/")
+
+@app.route("/boss")
+def boss():
+    return f"""
+    <div style="font-family:sans-serif; padding:20px;">
+        <h1 style="color:#d35400;">💰 老闆收銀台</h1>
+        <div style="background:#2ecc71; color:white; padding:20px; border-radius:10px; font-size:24px;">
+            今日累計：<strong>${total_income}</strong>
+        </div>
+        <hr>
+        <h3>今日訂單記錄：</h3>
+        <ul style="line-height:1.8;">
+            {"".join([f"<li style='border-bottom:1px solid #eee; padding:5px 0;'>{h}</li>" for h in history[::-1]])}
+        </ul>
+        <br><a href="/">回點餐前台</a>
+    </div>
+    """
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
