@@ -10,13 +10,58 @@ app.secret_key = secrets.token_hex(16)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 菜單資料 ---
-MENU = {
-    "蛋餅類": [{"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, {"name": "起司/牽絲蛋餅", "price": 40, "can_add": True}, {"name": "蔬菜蛋餅", "price": 40, "can_add": True}, {"name": "火腿蛋餅", "price": 40, "can_add": True}, {"name": "香煎培根蛋餅", "price": 40, "can_add": True}, {"name": "熱狗蛋餅", "price": 40, "can_add": True}, {"name": "塔香蛋餅", "price": 40, "can_add": True}, {"name": "玉米蛋餅", "price": 40, "can_add": True}, {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True}, {"name": "漢堡排蛋餅", "price": 45, "can_add": True}, {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True}, {"name": "里肌肉蛋餅", "price": 50, "can_add": True}, {"name": "厚切牛肉蛋餅", "price": 60, "can_add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}],
-    "泡麵 / 炒麵": [{"name": "招牌炒泡麵 (2包泡麵)", "price": 70, "can_add": True}, {"name": "起司魂炒泡麵 (2包泡麵)", "price": 75, "can_add": True}, {"name": "椒麻炒泡麵 (2包泡麵)", "price": 75, "can_add": True}, {"name": "菜脯辣炒泡麵 (2包泡麵)", "price": 75, "can_add": True}, {"name": "經典沙茶炒泡麵 (2包泡麵)", "price": 75, "can_add": True}, {"name": "蘑菇炒麵 (200G)", "price": 55, "can_add": True}, {"name": "黑胡椒炒麵 (200G)", "price": 55, "can_add": True}, {"name": "招牌爆香炒麵 (200G)", "price": 70, "can_add": True}, {"name": "起司魂炒麵 (200G)", "price": 75, "can_add": True}, {"name": "菜脯辣起司炒麵 (200G)", "price": 75, "can_add": True}, {"name": "經典沙茶炒麵 (200G)", "price": 75, "can_add": True}],
-    "果醬吐司/厚片": [{"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30}, {"name": "草莓吐司", "price": 25}, {"name": "草莓厚片", "price": 30}, {"name": "花生吐司", "price": 25}, {"name": "花生厚片", "price": 30}, {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}],
-    "烤吐司系列": [{"name": "煎蛋吐司", "price": 35, "can_add": True}, {"name": "火腿吐司", "price": 40, "can_add": True}, {"name": "培根吐司", "price": 40, "can_add": True}, {"name": "麥香雞吐司", "price": 40, "can_add": True}, {"name": "鮪魚吐司", "price": 50, "can_add": True}, {"name": "薯餅吐司", "price": 40, "can_add": True}, {"name": "漢堡排吐司", "price": 45, "can_add": True}, {"name": "里肌吐司", "price": 55, "can_add": True}, {"name": "卡啦雞腿吐司", "price": 60, "can_add": True}, {"name": "厚牛吐司", "price": 60, "can_add": True}],
-    "單點小點": [{"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35}, {"name": "蔥蛋", "price": 25}, {"name": "熱狗(3支)", "price": 20}, {"name": "薯餅", "price": 25}, {"name": "麥克雞塊", "price": 45}, {"name": "小肉豆", "price": 40}, {"name": "美式脆條", "price": 45}, {"name": "抓餅", "price": 35}, {"name": "港式蘿蔔糕", "price": 35}, {"name": "雞柳條", "price": 50}, {"name": "黃金蝦排", "price": 35}],
-    "飲品 (L)": [{"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, {"name": "鮮奶茶", "price": 45}, {"name": "豆漿紅茶", "price": 40}]
+MENU_DATA = {
+    "蛋餅類": [
+        {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
+        {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, {"name": "起司/牽絲蛋餅", "price": 40, "can_add": True}, 
+        {"name": "蔬菜蛋餅", "price": 40, "can_add": True}, {"name": "火腿蛋餅", "price": 40, "can_add": True},
+        {"name": "香煎培根蛋餅", "price": 40, "can_add": True}, {"name": "熱狗蛋餅", "price": 40, "can_add": True}, 
+        {"name": "塔香蛋餅", "price": 40, "can_add": True}, {"name": "玉米蛋餅", "price": 40, "can_add": True}, 
+        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True}, {"name": "漢堡排蛋餅", "price": 45, "can_add": True},
+        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True}, {"name": "里肌肉蛋餅", "price": 50, "can_add": True}, 
+        {"name": "厚切牛肉蛋餅", "price": 60, "can_add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
+    ],
+    "泡麵 / 炒麵": [
+        {"type": "label", "text": "泡麵系列 (2包泡麵)"},
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True}, 
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True}, 
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True}, 
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True}, 
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True}, 
+        {"type": "label", "text": "炒麵系列 (200G)"},
+        {"name": "蘑菇炒麵", "price": 55, "can_add": True}, 
+        {"name": "黑胡椒炒麵", "price": 55, "can_add": True}, 
+        {"name": "招牌爆香炒麵", "price": 70, "can_add": True},
+        {"name": "起司魂炒麵", "price": 75, "can_add": True}, 
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True}, 
+        {"name": "經典沙茶炒麵", "price": 75, "can_add": True}
+    ],
+    "果醬吐司/厚片": [
+        {"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30}, {"name": "草莓吐司", "price": 25}, 
+        {"name": "草莓厚片", "price": 30}, {"name": "花生吐司", "price": 25}, {"name": "花生厚片", "price": 30}, 
+        {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}
+    ],
+    "烤吐司系列": [
+        {"name": "煎蛋吐司", "price": 35, "can_add": True}, 
+        {"name": "火腿吐司 (有生菜、番茄)", "price": 40, "can_add": True, "no_veg": True}, 
+        {"name": "培根吐司 (有生菜、番茄)", "price": 40, "can_add": True, "no_veg": True}, 
+        {"name": "麥香雞吐司 (有生菜、番茄)", "price": 40, "can_add": True, "no_veg": True}, 
+        {"name": "鮪魚吐司 (有生菜、番茄)", "price": 50, "can_add": True, "no_veg": True}, 
+        {"name": "薯餅吐司 (有生菜、番茄)", "price": 40, "can_add": True, "no_veg": True},
+        {"name": "漢堡排吐司 (有生菜、番茄)", "price": 45, "can_add": True, "no_veg": True}, 
+        {"name": "里肌吐司 (有生菜、番茄)", "price": 55, "can_add": True, "no_veg": True}, 
+        {"name": "卡啦雞腿吐司 (有生菜、番茄)", "price": 60, "can_add": True, "no_veg": True}, 
+        {"name": "厚牛吐司 (有生菜、番茄)", "price": 60, "can_add": True, "no_veg": True}
+    ],
+    "單點小點": [
+        {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35}, {"name": "蔥蛋", "price": 25},
+        {"name": "熱狗(3支)", "price": 20}, {"name": "薯餅", "price": 25}, {"name": "麥克雞塊", "price": 45},
+        {"name": "小肉豆", "price": 40}, {"name": "美式脆條", "price": 45}, {"name": "抓餅", "price": 35},
+        {"name": "港式蘿蔔糕", "price": 35}, {"name": "雞柳條", "price": 50}, {"name": "黃金蝦排", "price": 35}
+    ],
+    "飲品 (L)": [
+        {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, {"name": "鮮奶茶", "price": 45}, {"name": "豆漿紅茶", "price": 40}
+    ]
 }
 
 history = []
@@ -37,32 +82,16 @@ def ensure_session():
 @app.route("/ping")
 def ping(): return "pong", 200
 
-# --- 自動傳送到 Google 表單的邏輯 ---
 def send_to_google(loc, total, summary):
-    # 這是你的 Google 表單提交網址
     url = "https://docs.google.com/forms/d/e/1FAIpQLSeXInB-6L-v13uG_Y-A-L10Xv_87U-D_p9uBw5H0906-p60-g/formResponse"
-    payload = {
-        "entry.1408016462": loc,     # 用餐方式
-        "entry.1895743452": total,   # 金額
-        "entry.550478028": summary   # 明細
-    }
-    try:
-        requests.post(url, data=payload, timeout=5)
-    except:
-        print("Google 備份失敗，但不影響現場點餐")
-
-@app.route("/get_backup_text")
-def get_backup_text():
-    now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
-    output = f"=== 晨食麵所 營收備份 ({now_str}) ===\\n今日累計總額：${total_income}\\n--------------------------\\n"
-    for h in history[::-1]:
-        output += f"[{h['time'].strftime('%H:%M')}] {h['loc']} - ${h['price']}\\n明細：{h['summary']}\\n\\n"
-    return jsonify({"text": output})
+    payload = {"entry.1408016462": loc, "entry.1895743452": total, "entry.550478028": summary}
+    try: requests.post(url, data=payload, timeout=5)
+    except: print("Google Error")
 
 @app.route("/")
 def index():
     cart = session.get('cart', [])
-    return render_template_string(INDEX_HTML, menu=MENU, cart_len=len(cart), total=sum(i['price'] for i in cart))
+    return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart))
 
 @app.route("/update_info", methods=["POST"])
 def update_info():
@@ -95,15 +124,17 @@ def clear():
         loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
         counts = Counter([i['name'] for i in cart])
         summary = ", ".join([f"{n}x{c}" for n,c in counts.items()])
-        
-        # 核心：送出訂單時自動發送到 Google
         send_to_google(loc, t, summary)
-        
         total_income += t
         history.append({"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": datetime.now()})
         session.clear()
-        return "<div style='text-align:center; padding:50px;'><h2>🎉 訂單已送出並自動備份至雲端！</h2><br><a href='/'>回首頁</a></div>"
+        return "<div style='text-align:center; padding:50px;'><h2>🎉 訂單已送出並自動備份！</h2><br><a href='/'>回首頁</a></div>"
     return redirect("/")
+
+@app.route("/boss")
+def boss():
+    clean_expired_data()
+    return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1])
 
 @app.route("/delete_order", methods=["POST"])
 def delete_order():
@@ -112,13 +143,50 @@ def delete_order():
     history = [h for h in history if h['id'] != order_id]
     return jsonify({"status": "deleted"})
 
-@app.route("/boss")
-def boss():
-    clean_expired_data()
-    return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1])
-
-# --- 此處省略 INDEX_HTML, CART_HTML, BOSS_HTML 模板內容，請沿用之前的版本 ---
-# ... (請將之前版本中的 HTML 內容完整貼回此處) ...
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+# --- 修正後的 HTML 模板 ---
+INDEX_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>晨食麵所</title><style>
+body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bottom:80px}
+.header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold}
+.order-setup{background:#fff;margin:10px 0;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:5px solid #ffbe00}
+.type-btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin-right:5px;font-size:14px}
+.type-btn.active{background:#ffbe00;color:#000;font-weight:bold}
+.section-title{background:#5d4037;color:white;padding:8px 12px;border-radius:4px;margin-top:20px;font-size:16px;font-weight:bold}
+.sub-label{background:#eee;color:#555;padding:4px 10px;margin:10px 0 5px 0;border-radius:4px;font-size:13px;border-left:4px solid #3498db}
+.item-card{background:white;padding:12px;margin:8px 0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.item-row{display:flex;justify-content:space-between;align-items:center}
+.price{color:#e67e22;font-weight:bold}
+.add-btn{background:#ffbe00;border:none;padding:8px 14px;border-radius:15px;font-weight:bold;cursor:pointer}
+.opt-grid{margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-top:1px dashed #eee;padding-top:10px}
+.opt-btn{background:#f8f9fa;border:1px solid #ddd;padding:8px 0;border-radius:6px;font-size:11px;text-align:center;cursor:pointer;color:#666}
+.opt-btn.active{background:#5d4037;color:white}
+.footer{position:fixed;bottom:0;left:0;right:0;background:#333;color:white;padding:12px;display:flex;justify-content:space-between;align-items:center;z-index:100}
+</style>
+<script>
+let selectedOptions={};
+function setOrderType(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=`});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('table-select').style.display=(t==='內用')?'block':'none';}
+function addToCart(n,p,i){let fn=n,fp=p;Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')){fn+='+'+selectedOptions[k].name;fp+=selectedOptions[k].price;}});fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`name=${encodeURIComponent(fn)}&price=${fp}`}).then(r=>r.json()).then(d=>{document.getElementById('c-count').innerText=d.count;document.getElementById('c-total').innerText=d.total;Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_'))delete selectedOptions[k];});document.querySelectorAll(`[data-item="${i}"]`).forEach(x=>x.classList.remove('active'));});}
+function toggleOpt(i,n,p,b){let k=i+'_'+n;if(selectedOptions[k]){delete selectedOptions[k];b.classList.remove('active');}else{selectedOptions[k]={name:n,price:p};b.classList.add('active');}}
+</script></head>
+<body><div class="header">🍜 晨食麵所</div>
+<div class="order-setup">用餐方式：<button class="type-btn active" onclick="setOrderType('外帶', this)">🥡 外帶</button><button class="type-btn" onclick="setOrderType('內用', this)">🍽️ 內用</button>
+<div id="table-select" style="display:none;margin-top:10px;">桌號：{% for n in range(1, 8) %}<button onclick="fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'type=內用&table={{n}}'})">{{n}}</button>{% endfor %}</div></div>
+{% for cat, items in menu.items() %}
+    <div class="section-title">{{ cat }}</div>
+    {% for item in items %}
+        {% if item.type == "label" %}
+            <div class="sub-label">{{ item.text }}</div>
+        {% else %}
+            {% set itemId = loop.index0 ~ cat %}
+            <div class="item-card"><div class="item-row"><div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div><button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, '{{ itemId }}')">加入 +</button></div>
+            {% if item.can_add %}<div class="opt-grid">
+                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加蛋', 15, this)">+ 加蛋</div>
+                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加里肌', 25, this)">+ 加里肌</div>
+                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加起司', 15, this)">+ 加起司</div>
+                {% if item.no_veg %}
+                    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加生菜', 0, this)" style="color:#e74c3c;">✘ 不加生菜</div>
+                    <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加番茄', 0, this)" style="color:#e74c3c;">✘ 不加番茄</div>
+                {% endif %}
+            </div>{% endif %}</div>
+        {% endif %}
+    {% endfor
