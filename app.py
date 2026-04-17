@@ -103,31 +103,8 @@ BASE_HTML = """
 </body></html>
 """
 
-@app.route("/")
-def index():
-    t = sum(i["price"] for i in orders)
-    return render_template_string(BASE_HTML, page='menu', menu_data=MENU, total=t, count=len(orders))
-
-@app.route("/add", methods=["POST"])
-def add():
-    item = get_item_by_id(int(request.form.get("id")))
-    if item: orders.append(item)
-    return redirect(url_for("index"))
-
-@app.route("/cart")
-def cart():
-    t = sum(i["price"] for i in orders)
-    return render_template_string(BASE_HTML, page='cart', cart_items=list(enumerate(orders)), total=t)
-
-@app.route("/del/<int:idx>")
-def delete(idx):
-    if 0 <= idx < len(orders): orders.pop(idx)
-    return redirect(url_for("cart"))
-
-@app.route("/clear")
-def clear():
-    orders.clear()
-    return redirect(url_for("index"))
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    # 這行很重要：讓 Render 能指定通訊埠
+    port = int(os.environ.get("PORT", 10000))
+    # host 必須設定為 '0.0.0.0' 
+    app.run(host='0.0.0.0', port=port)
