@@ -9,7 +9,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
 
-# --- 完整菜單資料 (請確保此區塊括號成對) ---
+# --- 更新後的菜單資料 ---
 MENU_DATA = {
     "吃爽組合 (套餐)": [
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "薯條/雞塊 二選一", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
@@ -19,35 +19,35 @@ MENU_DATA = {
         {"name": "巧克力薯餅吐司+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]}
     ],
     "蛋餅類": [
-        {"name": "原味蛋餅", "price": 30, "can_add": True}, 
-        {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
-        {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, 
-        {"name": "起司蛋餅", "price": 40, "can_add": True},
-        {"name": "蔬菜蛋餅", "price": 40, "can_add": True},
-        {"name": "火腿蛋餅", "price": 40, "can_add": True},
-        {"name": "香煎培根蛋餅", "price": 40, "can_add": True},
-        {"name": "熱狗蛋餅", "price": 40, "can_add": True},
-        {"name": "塔香蛋餅", "price": 40, "can_add": True},
-        {"name": "玉米蛋餅", "price": 40, "can_add": True},
-        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True},
-        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True},
-        {"name": "里肌肉蛋餅", "price": 50, "can_add": True},
-        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
+        {"name": "原味蛋餅", "price": 30, "can_add": True, "no_v": False}, 
+        {"name": "蔥香蛋餅", "price": 35, "can_add": True, "no_v": False}, 
+        {"name": "肉鬆蛋餅", "price": 40, "can_add": True, "no_v": False}, 
+        {"name": "起司蛋餅", "price": 40, "can_add": True, "no_v": False},
+        {"name": "蔬菜蛋餅", "price": 40, "can_add": True, "no_v": False},
+        {"name": "火腿蛋餅", "price": 40, "can_add": True, "no_v": False},
+        {"name": "香煎培根蛋餅", "price": 40, "can_add": True, "no_v": False},
+        {"name": "熱狗蛋餅", "price": 40, "can_add": True, "no_v": False},
+        {"name": "塔香蛋餅", "price": 40, "can_add": True, "no_v": False},
+        {"name": "玉米蛋餅", "price": 40, "can_add": True, "no_v": False},
+        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True, "no_v": False},
+        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "no_v": False},
+        {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "no_v": False},
+        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "no_v": False}
     ],
     "泡麵系列 (2包)": [
-        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True}, 
-        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True}
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"}, 
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True},
-        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True}, 
-        {"name": "起司魂炒麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True}
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "no_v": True, "sub": "無肉絲 / 附高麗菜,紅蘿蔔,洋蔥,蒜碎,蔥花,玉米"},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "no_v": True, "sub": "無肉絲 / 附高麗菜,紅蘿蔔,洋蔥,蒜碎,蔥花,玉米"},
+        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"}, 
+        {"name": "起司魂炒麵", "price": 75, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
+        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True, "no_v": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"}
     ],
     "果醬吐司/厚片": [
         {"name": "巧克力吐司", "price": 25, "is_jam": True}, {"name": "巧克力厚片", "price": 30, "is_jam": True},
@@ -56,12 +56,12 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25, "is_jam": True}, {"name": "奶酥厚片", "price": 30, "is_jam": True}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True},
-        {"name": "火腿吐司", "price": 40, "can_add": True},
-        {"name": "培根吐司", "price": 40, "can_add": True},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True},
-        {"name": "薯餅吐司", "price": 40, "can_add": True},
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "sub": "無生菜番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True},
+        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "no_v": True},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "no_v": True},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "no_v": True},
         {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True}, 
         {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True}
     ],
@@ -73,10 +73,8 @@ MENU_DATA = {
         {"name": "雞柳條", "price": 50}, {"name": "黃金蝦排", "price": 35}
     ],
     "飲品 (L)": [
-        {"name": "紅茶", "price": 25}, 
-        {"name": "香醇奶茶", "price": 30}, 
-        {"name": "冷泡茶", "price": 25},
-        {"name": "鮮奶茶", "price": 45}
+        {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, 
+        {"name": "冷泡茶", "price": 25}, {"name": "鮮奶茶", "price": 45}
     ]
 }
 
@@ -146,7 +144,7 @@ def delete_order():
     history = [h for h in history if h['id'] != oid]
     return jsonify({"status": "ok"})
 
-# --- 以下為 HTML 模板字串 ---
+# --- HTML 模板 ---
 
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><style>body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px 10px 80px}.header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold}.setup{background:#fff;margin:10px 0;padding:12px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:5px solid #ffbe00}.btn{padding:6px 12px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin:5px 5px 0 0;font-size:13px}.btn.active{background:#ffbe00;color:#000;font-weight:bold}.title{background:#5d4037;color:#fff;padding:6px 10px;border-radius:4px;margin-top:15px;font-weight:bold;font-size:11px}.card{background:#fff;padding:10px;margin:6px 0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}.row{display:flex;justify-content:space-between;align-items:center}.price{color:#e67e22;font-weight:bold;font-size:14px}.add{background:#ffbe00;border:none;padding:6px 12px;border-radius:15px;font-weight:bold;cursor:pointer;font-size:13px}.grid{margin-top:8px;display:grid;grid-template-columns:repeat(3, 1fr);gap:4px;border-top:1px dashed #eee;padding-top:8px}.opt{background:#f8f9fa;border:1px solid #eee;padding:4px 2px;border-radius:4px;font-size:10px;text-align:center;color:#666;cursor:pointer}.opt.active{background:#5d4037;color:#fff;border-color:#5d4037}.footer{position:fixed;bottom:0;left:0;right:0;background:#333;color:#fff;padding:12px;display:flex;justify-content:space-between;align-items:center;z-index:100}.sub-text{font-size:10px;color:#e67e22;display:block}</style>
@@ -161,7 +159,9 @@ function tgl(i,n,p,b,grp){if(grp){document.querySelectorAll(".opt[data-grp='"+i+
 </script></head>
 <body><div class="header" onmousedown="start()" onmouseup="end()" ontouchstart="start()" ontouchend="end()">🍜 晨食麵所</div><div class="setup">{% if table_id %}<div style="text-align:center;font-weight:bold;color:#5d4037">內用：{{table_id}}桌</div>{% else %}用餐方式：<button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button><button class="btn type-btn" onclick="setT('內用',this)">內用</button><div id="ts" style="display:none;margin-top:10px">桌號：{% for n in range(1,11) %}<button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>{% endfor %}</div>{% endif %}</div>
 {% for cat,items in menu.items() %}<div class="title">{{cat}}</div>{% for item in items %}{% set iid = "id" ~ loop.index ~ cat[0] %}<div class="card"><div class="row"><div><strong style="font-size:14px">{{item.name}}</strong>{% if item.sub %}<span class="sub-text">{{item.sub}}</span>{% endif %}<br><span class="price">${{item.price}}</span></div><button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}')">加入 +</button></div><div class="grid">
-{% if item.can_add %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋($15)</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌($25)</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司($15)</div>{% if item.no_v %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加菜',0,this)" style="color:#e74c3c">✘不加菜</div>{% endif %}{% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加辣',0,this)" style="color:#d35400">🔥加辣</div>{% endif %}{% endif %}{% if item.is_jam %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>{% endif %}{% if item.opts %}{% for group in item.opts %}{% set gidx=loop.index %}{% for o in group %}<div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>{% endfor %}{% endfor %}{% endif %}</div></div>{% endfor %}{% endfor %}
+{% if item.can_add %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋($15)</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌($25)</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司($15)</div>
+{% if item.no_v %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不要生菜',0,this)" style="color:#e67e22">✘不要生菜</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不要番茄',0,this)" style="color:#e67e22">✘不要番茄</div>{% endif %}
+{% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:#d35400">🔥特製辣</div>{% endif %}{% endif %}{% if item.is_jam %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>{% endif %}{% if item.opts %}{% for group in item.opts %}{% set gidx=loop.index %}{% for o in group %}<div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>{% endfor %}{% endfor %}{% endif %}</div></div>{% endfor %}{% endfor %}
 <div class="footer"><span>已點 <span id="cc">{{cart_len}}</span> | $<span id="ct">{{total}}</span></span><a href="/cart" style="background:#ffbe00;color:#000;padding:8px 15px;border-radius:20px;text-decoration:none;font-weight:bold">去結帳</a></div></body></html>
 """
 
