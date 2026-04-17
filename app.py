@@ -10,11 +10,14 @@ app.secret_key = secrets.token_hex(16)
 # --- 密碼設定 ---
 BOSS_PASSWORD = "8888" 
 
-# --- 菜單資料 (可自行增減) ---
+# --- 菜單資料 (這是目前的縮減版，你可以按格式自行增加) ---
 MENU_DATA = {
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
         {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, {"name": "里肌肉蛋餅", "price": 50, "can_add": True}
+    ],
+    "泡麵系列": [
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True}, {"name": "起司魂炒泡麵", "price": 75, "can_add": True}
     ],
     "飲品 (L)": [
         {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}
@@ -70,7 +73,6 @@ def clear():
         order_data = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": now_time}
         history.append(order_data)
         session.clear()
-        # 跳轉到「自動列印」的中間頁面
         return render_template_string(AUTO_PRINT_HTML, order=order_data)
     return redirect("/")
 
@@ -78,7 +80,7 @@ def clear():
 def boss():
     pw = request.args.get("pw")
     if pw != BOSS_PASSWORD:
-        return "<h1>❌ 密碼錯誤</h1>", 403
+        return "<h1>❌ 密碼錯誤</h1><br><a href='/'>回首頁</a>", 403
     return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1], current_pw=BOSS_PASSWORD)
 
 @app.route("/delete_order", methods=["POST"])
@@ -88,12 +90,12 @@ def delete_order():
     history = [h for h in history if h['id'] != order_id]
     return jsonify({"status": "deleted"})
 
-# --- HTML 模板 ---
+# --- HTML 模板區 ---
 
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>晨食麵所</title><style>
 body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bottom:80px}
-.header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold}
+.header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold;cursor:pointer}
 .order-setup{background:#fff;margin:10px 0;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:5px solid #ffbe00}
 .type-btn, .table-btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin-right:5px;font-size:14px;margin-bottom:5px}
 .type-btn.active, .table-btn.active{background:#ffbe00;color:#000;font-weight:bold}
@@ -113,7 +115,7 @@ function updateDisplay(){ document.getElementById('display-table').innerText = c
 function addToCart(n,p){ fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`name=${encodeURIComponent(n)}&price=${p}`}).then(r=>r.json()).then(d=>{ document.getElementById('c-count').innerText=d.count; document.getElementById('c-total').innerText=d.total; }); }
 </script></head>
 <body>
-<div class="header" onclick="goToBoss()">🍜 晨食麵所</div>
+<div class="header" onclick="goToBoss()">🍜 晨食麵所 (櫃台專用)</div>
 <div class="order-setup">用餐方式：<button class="type-btn active" onclick="setOrderType('外帶', this)">🥡 外帶</button><button class="type-btn" onclick="setOrderType('內用', this)">🍽️ 內用</button>
 <div id="table-select" style="display:none;margin-top:10px;">桌號：{% for n in range(1, 11) %}<button class="table-btn" onclick="setTable('{{n}}', this)">{{n}}</button>{% endfor %}</div></div>
 {% for cat, items in menu.items() %}<div class="section-title">{{ cat }}</div>{% for item in items %}
@@ -129,7 +131,6 @@ CART_HTML = """
 <form action="/clear" method="POST"><button type="submit" style="width:100%; background:#ffbe00; padding:15px; border:none; border-radius:10px; font-weight:bold; font-size:18px;">確認送出並列印</button></form><br><a href="/" style="color:gray;">返回修改</a></div>
 """
 
-# --- 關鍵：自動列印頁面 ---
 AUTO_PRINT_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>列印訂單</title>
 <style>
@@ -138,42 +139,28 @@ AUTO_PRINT_HTML = """
     @media print {
         body * { visibility: hidden; }
         .ticket, .ticket * { visibility: visible; }
-        .ticket { display: block; position: fixed; left: 0; top: 0; width: 100%; font-size: 22px; padding: 10px; text-align: left; }
+        .ticket { display: block; position: fixed; left: 0; top: 0; width: 100%; font-size: 24px; padding: 20px; text-align: left; line-height: 1.5; }
     }
 </style>
 <script>
     window.onload = function() {
-        window.print(); // 自動彈出列印選單
-        setTimeout(function(){ location.href='/'; }, 2000); // 列印完自動回首頁
+        window.print(); 
+        setTimeout(function(){ location.href='/'; }, 1500); 
     }
 </script></head>
 <body>
-    <h2>✅ 訂單已送出</h2>
-    <p>正在呼叫列印選單...</p>
+    <h2>✅ 訂單處理中</h2>
+    <p>正在彈出列印選單...</p>
     <div class="ticket">
         <span style="float:right;">{{ order.time }}</span>
-        <b style="font-size:26px;">{{ order.loc }}</b><hr>
-        <div style="margin:15px 0;">{{ order.summary | safe }}</div><hr>
-        <b>總金額：${{ order.price }}</b>
+        <b style="font-size:30px;">{{ order.loc }}</b><hr>
+        <div style="margin:20px 0;">{{ order.summary | safe }}</div><hr>
+        <b>總計：${{ order.price }}</b>
     </div>
 </body></html>
 """
 
 BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>老闆後台</title><style>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>管理後台</title><style>
 body{font-family:sans-serif;background:#f4f4f4;padding:10px}
-.order-item{background:white;padding:15px;margin-bottom:10px;border-radius:10px}
-</style><script>
-function del(id,e){ if(confirm('完成？')){ fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`id=${id}`}).then(()=>e.closest('.order-item').style.display='none'); }}
-</script></head>
-<body>
-<div style="display:flex; justify-content:space-between; align-items:center;"><h2>今日營收：${{ total }}</h2><button onclick="location.href='/'">回點餐頁</button></div>
-{% for h in logs %}<div class="order-item">
-<span style="float:right;">{{ h.time }}</span><b>{{ h.loc }}</b><br>
-<p>{{ h.summary | safe }}</p><b>額：${{ h.price }}</b>
-<button onclick="del('{{h.id}}',this)" style="float:right; color:green; border:none; background:none; font-weight:bold;">[✔ 完成]</button>
-</div>{% endfor %}</body></html>
-"""
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+.order-item{background:white;padding:15px;margin-bottom:
