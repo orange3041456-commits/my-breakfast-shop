@@ -23,24 +23,24 @@ MENU_DATA = {
         {"name": "蔬菜蛋餅", "price": 40, "can_add": True}, {"name": "火腿蛋餅", "price": 40, "can_add": True}, 
         {"name": "里肌肉蛋餅", "price": 50, "can_add": True}
     ],
-    "泡麵系列 (配料:高麗菜.紅蘿蔔.洋蔥.肉絲.蒜.蔥.玉米)": [
+    "泡麵系列": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True}, 
         {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True}, 
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True}
     ],
-    "炒麵系列 (配料:高麗菜.紅蘿蔔.洋蔥.肉絲.蒜.蔥.玉米)": [
+    "炒麵系列": [
         {"name": "蘑菇炒麵", "price": 55, "can_add": True, "can_spicy": True}, 
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True}, 
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True}
     ],
-    "果醬吐司/厚片": [
+    "果醬系列": [
         {"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30},
         {"name": "花生吐司", "price": 25}, {"name": "花生厚片", "price": 30}
     ],
     "烤吐司系列": [
         {"name": "煎蛋吐司", "price": 35, "can_add": True}, 
-        {"name": "里肌吐司 (有生菜/番茄)", "price": 55, "can_add": True, "no_v": True}, 
-        {"name": "卡啦雞腿吐司 (有生菜/番茄)", "price": 60, "can_add": True, "no_v": True}
+        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "熱狗(3支)", "price": 20}, {"name": "薯餅", "price": 25},
@@ -80,35 +80,3 @@ def add():
 
 @app.route("/cart")
 def view_cart():
-    cart = session.get('cart', [])
-    info = session.get('info', {"type": "外帶", "table": ""})
-    t = sum(i['price'] for i in cart)
-    counts = Counter([i['name'] for i in cart])
-    loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
-    return render_template_string(CART_HTML, counts=counts, total=t, loc=loc)
-
-@app.route("/clear", methods=["POST"])
-def clear():
-    global total_income
-    cart = session.get('cart', [])
-    info = session.get('info', {"type": "外帶", "table": ""})
-    t = sum(i['price'] for i in cart)
-    if t > 0:
-        loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
-        counts = Counter([i['name'] for i in cart])
-        now = datetime.now().strftime('%H:%M')
-        summary = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
-        total_income += t
-        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": now}
-        history.append(order)
-        session.clear()
-        return render_template_string(PRINT_HTML, order=order)
-    return redirect("/")
-
-@app.route("/boss")
-def boss():
-    if request.args.get("pw") != BOSS_PASSWORD: return "<h1>❌</h1>", 403
-    return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1])
-
-@app.route("/delete_order", methods=["POST"])
-def delete_order
