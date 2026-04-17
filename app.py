@@ -26,14 +26,14 @@ MENU_DATA = {
         {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True}, {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True}, 
         {"name": "里肌肉蛋餅", "price": 50, "can_add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
-    "泡麵系列 (2包泡麵)": [
+    "泡麵系列 (2包泡麵 / 配料:高麗菜.紅蘿蔔.洋蔥.肉絲.蒜.蔥.玉米)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True}, 
         {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True}, 
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True}, 
         {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "can_spicy": True}, 
         {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True}
     ],
-    "炒麵系列 (200g)": [
+    "炒麵系列 (200g / 配料:高麗菜.紅蘿蔔.洋蔥.肉絲.蒜.蔥.玉米)": [
         {"name": "蘑菇炒麵", "price": 55, "can_add": True, "can_spicy": True}, 
         {"name": "黑胡椒炒麵", "price": 55, "can_add": True, "can_spicy": True}, 
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True}, 
@@ -140,7 +140,7 @@ body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px 10px 80px}
 .setup{background:#fff;margin:10px 0;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:5px solid #ffbe00}
 .btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin:5px 5px 0 0}
 .btn.active{background:#ffbe00;color:#000;font-weight:bold}
-.title{background:#5d4037;color:#fff;padding:8px 12px;border-radius:4px;margin-top:20px;font-weight:bold}
+.title{background:#5d4037;color:#fff;padding:8px 12px;border-radius:4px;margin-top:20px;font-weight:bold;font-size:14px}
 .card{background:#fff;padding:12px;margin:8px 0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .row{display:flex;justify-content:space-between;align-items:center}
 .price{color:#e67e22;font-weight:bold}
@@ -154,4 +154,6 @@ body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px 10px 80px}
 let opts={};let curT="{{table_id if table_id else ''}}";let tmr;
 function start(){tmr=setTimeout(()=>{let p=prompt("PW:");if(p)location.href="/boss?pw="+p},3000)}
 function end(){clearTimeout(tmr)}
-function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=${curT}`});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');let s=document.getElementById('ts');if(s)s.style.display=(t
+function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=${curT}`});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');let s=document.getElementById('ts');if(s)s.style.display=(t==='內用')?'block':'none'}
+function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=內用&table=${n}`});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
+function buy(n,p,i){let fn=n,fp=p;Object.keys(opts).forEach(k=>{if(k
