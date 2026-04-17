@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, jsonify, session, redirect
+from Flask import Flask, render_template_string, request, jsonify, session, redirect
 import os
 import secrets
 from collections import Counter
@@ -10,22 +10,22 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 # --- 菜單資料 ---
 MENU = {
     "蛋餅類": [
-        {"name": "原味蛋餅", "price": 30, "add": True}, {"name": "蔥香蛋餅", "price": 35, "add": True}, 
-        {"name": "肉鬆蛋餅", "price": 40, "add": True}, {"name": "起司/牽絲蛋餅", "price": 40, "add": True}, 
-        {"name": "蔬菜蛋餅", "price": 40, "add": True}, {"name": "火腿蛋餅", "price": 40, "add": True},
-        {"name": "香煎培根蛋餅", "price": 40, "add": True}, {"name": "熱狗蛋餅", "price": 40, "add": True}, 
-        {"name": "塔香蛋餅", "price": 40, "add": True}, {"name": "玉米蛋餅", "price": 40, "add": True}, 
-        {"name": "酥脆薯餅蛋餅", "price": 45, "add": True}, {"name": "漢堡排蛋餅", "price": 45, "add": True},
-        {"name": "特調鮪魚蛋餅", "price": 50, "add": True}, {"name": "里肌肉蛋餅", "price": 50, "add": True}, 
-        {"name": "厚切牛肉蛋餅", "price": 60, "add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "add": True}
+        {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
+        {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, {"name": "起司/牽絲蛋餅", "price": 40, "can_add": True}, 
+        {"name": "蔬菜蛋餅", "price": 40, "can_add": True}, {"name": "火腿蛋餅", "price": 40, "can_add": True},
+        {"name": "香煎培根蛋餅", "price": 40, "can_add": True}, {"name": "熱狗蛋餅", "price": 40, "can_add": True}, 
+        {"name": "塔香蛋餅", "price": 40, "can_add": True}, {"name": "玉米蛋餅", "price": 40, "can_add": True}, 
+        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True}, {"name": "漢堡排蛋餅", "price": 45, "can_add": True},
+        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True}, {"name": "里肌肉蛋餅", "price": 50, "can_add": True}, 
+        {"name": "厚切牛肉蛋餅", "price": 60, "can_add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
     "泡麵/炒麵(200g)": [
-        {"name": "招牌炒泡麵", "price": 70, "add": True}, {"name": "起司魂炒泡麵", "price": 75, "add": True}, 
-        {"name": "椒麻炒泡麵", "price": 75, "add": True}, {"name": "菜脯辣炒泡麵", "price": 75, "add": True}, 
-        {"name": "經典沙茶炒泡麵", "price": 75, "add": True}, {"name": "蘑菇炒麵", "price": 55, "add": True}, 
-        {"name": "黑胡椒炒麵", "price": 55, "add": True}, {"name": "招牌爆香炒麵", "price": 70, "add": True},
-        {"name": "起司魂炒麵", "price": 75, "add": True}, {"name": "菜脯辣起司炒麵", "price": 75, "add": True}, 
-        {"name": "經典沙茶炒麵", "price": 75, "add": True}
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True}, {"name": "起司魂炒泡麵", "price": 75, "can_add": True}, 
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True}, {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True}, 
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True}, {"name": "蘑菇炒麵", "price": 55, "can_add": True}, 
+        {"name": "黑胡椒炒麵", "price": 55, "can_add": True}, {"name": "招牌爆香炒麵", "price": 70, "can_add": True},
+        {"name": "起司魂炒麵", "price": 75, "can_add": True}, {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True}, 
+        {"name": "經典沙茶炒麵", "price": 75, "can_add": True}
     ],
     "果醬吐司/厚片": [
         {"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30}, {"name": "草莓吐司", "price": 25}, 
@@ -33,11 +33,11 @@ MENU = {
         {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "add": True}, {"name": "火腿吐司", "price": 40, "add": True}, 
-        {"name": "培根吐司", "price": 40, "add": True}, {"name": "麥香雞吐司", "price": 40, "add": True}, 
-        {"name": "鮪魚吐司", "price": 50, "add": True}, {"name": "薯餅吐司", "price": 40, "add": True},
-        {"name": "漢堡排吐司", "price": 45, "add": True}, {"name": "里肌吐司", "price": 55, "add": True}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "add": True}, {"name": "厚牛吐司", "price": 60, "add": True}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True}, {"name": "火腿吐司", "price": 40, "can_add": True}, 
+        {"name": "培根吐司", "price": 40, "can_add": True}, {"name": "麥香雞吐司", "price": 40, "can_add": True}, 
+        {"name": "鮪魚吐司", "price": 50, "can_add": True}, {"name": "薯餅吐司", "price": 40, "can_add": True},
+        {"name": "漢堡排吐司", "price": 45, "can_add": True}, {"name": "里肌吐司", "price": 55, "can_add": True}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True}, {"name": "厚牛吐司", "price": 60, "can_add": True}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35}, {"name": "蔥蛋", "price": 25},
@@ -56,9 +56,9 @@ total_income = 0
 @app.before_request
 def ensure_session():
     if 'cart' not in session: session['cart'] = []
+    if 'order_info' not in session: session['order_info'] = {"type": "外帶", "table": ""}
     session.modified = True
 
-# --- 主頁面 ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -69,29 +69,87 @@ HTML_TEMPLATE = """
     <style>
         body { font-family: sans-serif; background: #fdfaf0; margin: 0; padding: 10px; padding-bottom: 80px; }
         .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; }
+        
+        /* 用餐方式選擇區塊 */
+        .order-setup { background: #fff; margin: 10px 0; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 5px solid #ffbe00; }
+        .setup-title { font-weight: bold; margin-bottom: 10px; display: block; }
+        .type-btn { padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; background: #f8f9fa; cursor: pointer; margin-right: 5px; font-size: 14px; }
+        .type-btn.active { background: #ffbe00; border-color: #ffbe00; color: #000; font-weight: bold; }
+        #table-select { margin-top: 10px; display: none; }
+        .table-btn { padding: 5px 10px; border: 1px solid #ddd; border-radius: 5px; margin: 2px; background: white; cursor: pointer; }
+        .table-btn.active { background: #5d4037; color: white; border-color: #5d4037; }
+
         .section-title { background: #5d4037; color: white; padding: 5px 12px; border-radius: 4px; margin-top: 15px; font-size: 14px; }
         .item-card { background: white; padding: 12px; margin: 8px 0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .item-row { display: flex; justify-content: space-between; align-items: center; }
         .price { color: #e67e22; font-weight: bold; }
         .add-btn { background: #ffbe00; border: none; padding: 8px 14px; border-radius: 15px; font-weight: bold; cursor: pointer; }
         .opt-grid { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; border-top: 1px dashed #eee; padding-top: 10px; }
-        .quick-add { background: #f8f9fa; border: 1px solid #ddd; padding: 8px 4px; border-radius: 6px; font-size: 11px; text-align: center; cursor: pointer; font-weight: bold; }
+        .opt-btn { background: #f8f9fa; border: 1px solid #ddd; padding: 8px 0; border-radius: 6px; font-size: 12px; text-align: center; cursor: pointer; }
+        .opt-btn.active { background: #5d4037; color: white; border-color: #5d4037; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         .msg { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: white; padding: 8px 16px; border-radius: 20px; display: none; z-index: 999; }
     </style>
     <script>
-        function directAdd(name, price) {
+        let selectedOptions = {};
+
+        // 設定用餐方式
+        function setOrderType(type) {
+            fetch('/update_info', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `type=${type}&table=`
+            });
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('table-select').style.display = (type === '內用') ? 'block' : 'none';
+        }
+
+        // 設定桌號
+        function setTable(num) {
+            fetch('/update_info', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `type=內用&table=${num}`
+            });
+            document.querySelectorAll('.table-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function toggleOpt(itemId, optName, price) {
+            const key = itemId + '_' + optName;
+            const btn = event.target;
+            if (selectedOptions[key]) {
+                delete selectedOptions[key];
+                btn.classList.remove('active');
+            } else {
+                selectedOptions[key] = {name: optName, price: price};
+                btn.classList.add('active');
+            }
+        }
+
+        function addToCart(baseName, basePrice, itemId) {
+            let finalName = baseName;
+            let finalPrice = basePrice;
+            Object.keys(selectedOptions).forEach(key => {
+                if (key.startsWith(itemId + '_')) {
+                    finalName += '+' + selectedOptions[key].name;
+                    finalPrice += selectedOptions[key].price;
+                }
+            });
             fetch('/add', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `name=${encodeURIComponent(name)}&price=${price}`
+                body: `name=${encodeURIComponent(finalName)}&price=${finalPrice}`
             }).then(r => r.json()).then(data => {
                 document.getElementById('c-count').innerText = data.count;
                 document.getElementById('c-total').innerText = data.total;
                 const m = document.getElementById('msg-box');
-                m.innerText = '已加：' + name;
+                m.innerText = '已加：' + finalName;
                 m.style.display = 'block';
                 setTimeout(() => { m.style.display = 'none'; }, 800);
+                Object.keys(selectedOptions).forEach(key => { if (key.startsWith(itemId + '_')) delete selectedOptions[key]; });
+                document.querySelectorAll(`[data-item="${itemId}"]`).forEach(b => b.classList.remove('active'));
             });
         }
     </script>
@@ -99,24 +157,40 @@ HTML_TEMPLATE = """
 <body>
     <div id="msg-box" class="msg"></div>
     <div class="header">🍜 晨食麵所</div>
+
+    <div class="order-setup">
+        <span class="setup-title">📍 請先選擇用餐方式：</span>
+        <button class="type-btn active" onclick="setOrderType('外帶')">🥡 外帶</button>
+        <button class="type-btn" onclick="setOrderType('內用')">🍽️ 內用</button>
+        
+        <div id="table-select">
+            <span class="setup-title">🪑 選擇桌號：</span>
+            {% for n in range(1, 8) %}
+            <button class="table-btn" onclick="setTable('{{ n }}')">{{ n }}</button>
+            {% endfor %}
+        </div>
+    </div>
+
     {% for cat, items in menu.items() %}
     <div class="section-title">{{ cat }}</div>
     {% for item in items %}
+    {% set itemId = loop.index0 ~ cat %}
     <div class="item-card">
         <div class="item-row">
             <div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div>
-            <button class="add-btn" onclick="directAdd('{{ item.name }}', {{ item.price }})">原味加入</button>
+            <button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, '{{ itemId }}')">加入 +</button>
         </div>
-        {% if item.add %}
+        {% if item.can_add %}
         <div class="opt-grid">
-            <div class="quick-add" onclick="directAdd('{{ item.name }}+蛋', {{ item.price + 15 }})">+ 加蛋</div>
-            <div class="quick-add" onclick="directAdd('{{ item.name }}+里肌', {{ item.price + 25 }})">+ 加里肌</div>
-            <div class="quick-add" onclick="directAdd('{{ item.name }}+起司', {{ item.price + 15 }})">+ 加起司</div>
+            <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加蛋', 15)">+ 加蛋</div>
+            <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加里肌', 25)">+ 加里肌</div>
+            <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加起司', 15)">+ 加起司</div>
         </div>
         {% endif %}
     </div>
     {% endfor %}
     {% endfor %}
+
     <div class="footer">
         <span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span></span>
         <a href="/cart" style="background:#ffbe00; color:000; padding:8px 15px; border-radius:20px; text-decoration:none; font-weight:bold;">去結帳</a>
@@ -130,6 +204,11 @@ def index():
     cart = session.get('cart', [])
     return render_template_string(HTML_TEMPLATE, menu=MENU, cart_len=len(cart), total=sum(i['price'] for i in cart))
 
+@app.route("/update_info", methods=["POST"])
+def update_info():
+    session['order_info'] = {"type": request.form.get("type"), "table": request.form.get("table")}
+    return jsonify({"status": "ok"})
+
 @app.route("/add", methods=["POST"])
 def add():
     temp = session.get('cart', [])
@@ -140,40 +219,33 @@ def add():
 @app.route("/cart")
 def view_cart():
     cart = session.get('cart', [])
+    info = session.get('order_info', {"type": "外帶", "table": ""})
     t = sum(i['price'] for i in cart)
-    # 統計相同品項數量
     counts = Counter([i['name'] for i in cart])
+    location = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
     return render_template_string("""
     <div style="padding:20px; font-family:sans-serif; max-width:500px; margin:auto;">
         <h3>🛒 訂單清單</h3>
+        <p style="background:#eee; padding:10px; border-radius:5px;"><strong>用餐方式：</strong> {{ loc }}</p>
         {% for name, count in counts.items() %}
         <p style="font-size:18px;"><strong>{{ name }}</strong> <span style="color:red;"> x {{ count }}</span></p>
         {% endfor %}
         <hr>
+        <h4 style="text-align:right;">總計: ${{ total }}</h4>
         <form action="/clear" method="POST">
-            <h4>1. 用餐方式：</h4>
-            <label><input type="radio" name="order_type" value="外帶" checked onclick="document.getElementById('ts').style.display='none'"> 🥡 外帶</label>
-            <label><input type="radio" name="order_type" value="內用" onclick="document.getElementById('ts').style.display='block'"> 🍽️ 內用</label>
-            <div id="ts" style="display:none; margin-top:10px; background:#f9f9f9; padding:10px; border-radius:5px;">
-                <p>2. 桌號：</p>
-                {% for n in range(1, 8) %}
-                <label style="margin-right:10px;"><input type="radio" name="table_num" value="{{ n }}"> {{ n }}桌</label>
-                {% endfor %}
-            </div>
-            <h4 style="text-align:right;">總計: ${{ total }}</h4>
-            <button type="submit" style="width:100%; background:#ffbe00; padding:15px; border:none; border-radius:10px; font-weight:bold; font-size:18px;">送出訂單</button>
+            <button type="submit" style="width:100%; background:#ffbe00; padding:15px; border:none; border-radius:10px; font-weight:bold; font-size:18px;">確認送出訂單</button>
         </form>
+        <p style="text-align:center; margin-top:20px;"><a href="/" style="color:gray;">回菜單修改用餐方式</a></p>
     </div>
-    """, counts=counts, total=t)
+    """, counts=counts, total=t, loc=location)
 
 @app.route("/clear", methods=["POST"])
 def clear():
     global total_income
     cart = session.get('cart', [])
+    info = session.get('order_info', {"type": "外帶", "table": ""})
     t = sum(i['price'] for i in cart)
-    order_type = request.form.get("order_type")
-    table_num = request.form.get("table_num")
-    location = f"{order_type}" if order_type == "外帶" else f"內用-{table_num}桌"
+    location = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
     
     if t > 0:
         total_income += t
@@ -203,7 +275,6 @@ def boss():
                 body { padding: 0; margin: 0; width: 58mm; }
                 .order-item { border-bottom: 1px dashed #000; padding: 10px 0; page-break-after: always; }
                 .shop-name { font-size: 18px; font-weight: bold; display: block !important; }
-                .qty { color: black; border: 1px solid black; padding: 0 3px; }
             }
             .shop-name { display: none; }
         </style>
