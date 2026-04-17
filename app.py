@@ -156,8 +156,8 @@ INDEX_HTML = """
 body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bottom:80px}
 .header{background:#ffbe00;color:#fff;padding:15px;text-align:center;border-radius:0 0 15px 15px;font-weight:bold}
 .order-setup{background:#fff;margin:10px 0;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:5px solid #ffbe00}
-.type-btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin-right:5px;font-size:14px}
-.type-btn.active{background:#ffbe00;color:#000;font-weight:bold}
+.type-btn, .table-btn{padding:8px 15px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;margin-right:5px;font-size:14px;margin-bottom:5px}
+.type-btn.active, .table-btn.active{background:#ffbe00;color:#000;font-weight:bold;border-color:#ffbe00}
 .section-title{background:#5d4037;color:white;padding:8px 12px;border-radius:4px;margin-top:20px;font-size:16px;font-weight:bold}
 .item-card{background:white;padding:12px;margin:8px 0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .item-row{display:flex;justify-content:space-between;align-items:center}
@@ -170,13 +170,74 @@ body{font-family:sans-serif;background:#fdfaf0;margin:0;padding:10px;padding-bot
 </style>
 <script>
 let selectedOptions={};
-function setOrderType(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=`});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('table-select').style.display=(t==='內用')?'block':'none';}
-function addToCart(n,p,i){let fn=n,fp=p;Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')){fn+='+'+selectedOptions[k].name;fp+=selectedOptions[k].price;}});fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`name=${encodeURIComponent(fn)}&price=${fp}`}).then(r=>r.json()).then(d=>{document.getElementById('c-count').innerText=d.count;document.getElementById('c-total').innerText=d.total;Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_'))delete selectedOptions[k];});document.querySelectorAll(`[data-item="${i}"]`).forEach(x=>x.classList.remove('active'));});}
-function toggleOpt(i,n,p,b){let k=i+'_'+n;if(selectedOptions[k]){delete selectedOptions[k];b.classList.remove('active');}else{selectedOptions[k]={name:n,price:p};b.classList.add('active');}}
+let currentTable = "";
+
+function setOrderType(t,b){
+    fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=${t}&table=${currentTable}`});
+    document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const ts = document.getElementById('table-select');
+    if(t==='內用'){
+        ts.style.display='block';
+    } else {
+        ts.style.display='none';
+        currentTable = "";
+        document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));
+    }
+    updateDisplay();
+}
+
+function setTable(n,b){
+    currentTable = n;
+    fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=內用&table=${n}`});
+    document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    updateDisplay();
+}
+
+function updateDisplay(){
+    const infoText = currentTable ? ` (第 ${currentTable} 桌)` : "";
+    document.getElementById('display-table').innerText = infoText;
+}
+
+function addToCart(n,p,i){
+    let fn=n, fp=p;
+    Object.keys(selectedOptions).forEach(k=>{
+        if(k.startsWith(i+'_')){
+            fn+='+'+selectedOptions[k].name;
+            fp+=selectedOptions[k].price;
+        }
+    });
+    fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`name=${encodeURIComponent(fn)}&price=${fp}`})
+    .then(r=>r.json()).then(d=>{
+        document.getElementById('c-count').innerText=d.count;
+        document.getElementById('c-total').innerText=d.total;
+        Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_'))delete selectedOptions[k];});
+        document.querySelectorAll(`[data-item="${i}"]`).forEach(x=>x.classList.remove('active'));
+    });
+}
+
+function toggleOpt(i,n,p,b){
+    let k=i+'_'+n;
+    if(selectedOptions[k]){
+        delete selectedOptions[k];
+        b.classList.remove('active');
+    }else{
+        selectedOptions[k]={name:n,price:p};
+        b.classList.add('active');
+    }
+}
 </script></head>
 <body><div class="header">🍜 晨食麵所</div>
-<div class="order-setup">用餐方式：<button class="type-btn active" onclick="setOrderType('外帶', this)">🥡 外帶</button><button class="type-btn" onclick="setOrderType('內用', this)">🍽️ 內用</button>
-<div id="table-select" style="display:none;margin-top:10px;">桌號：{% for n in range(1, 8) %}<button onclick="fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'type=內用&table={{n}}'})">{{n}}</button>{% endfor %}</div></div>
+<div class="order-setup">
+    用餐方式：
+    <button class="type-btn active" onclick="setOrderType('外帶', this)">🥡 外帶</button>
+    <button class="type-btn" onclick="setOrderType('內用', this)">🍽️ 內用</button>
+    <div id="table-select" style="display:none;margin-top:10px;">
+        桌號：
+        {% for n in range(1, 11) %}<button class="table-btn" onclick="setTable('{{n}}', this)">{{n}}</button>{% endfor %}
+    </div>
+</div>
 {% for cat, items in menu.items() %}
     <div class="section-title">{{ cat }}</div>
     {% for item in items %}
@@ -186,14 +247,14 @@ function toggleOpt(i,n,p,b){let k=i+'_'+n;if(selectedOptions[k]){delete selected
             <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加蛋', 15, this)">+ 加蛋($15)</div>
             <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加里肌', 25, this)">+ 加里肌($25)</div>
             <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加起司', 15, this)">+ 加起司($15)</div>
-            {% if item.no_veg %}
-                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加生菜', 0, this)" style="color:#e74c3c;">✘ 不加生菜</div>
-                <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '不加番茄', 0, this)" style="color:#e74c3c;">✘ 不加番茄</div>
-            {% endif %}
         </div>{% endif %}</div>
     {% endfor %}
 {% endfor %}
-<div class="footer"><span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span></span><a href="/cart" style="background:#ffbe00; color:000; padding:8px 15px; border-radius:20px; text-decoration:none; font-weight:bold;">去結帳</a></div></body></html>
+<div class="footer">
+    <span>已點 <span id="c-count">{{ cart_len }}</span> 項 | $<span id="c-total">{{ total }}</span> <span id="display-table"></span></span>
+    <a href="/cart" style="background:#ffbe00; color:#000; padding:8px 15px; border-radius:20px; text-decoration:none; font-weight:bold;">去結帳</a>
+</div>
+</body></html>
 """
 
 CART_HTML = """
@@ -207,24 +268,19 @@ BOSS_HTML = """
 body{font-family:sans-serif;background:#f4f4f4;padding:10px}
 .order-item{background:white;padding:15px;margin-bottom:10px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
 .print-btn{background:#333;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer;margin-top:10px;font-weight:bold}
+.del-btn{color:green;border:none;background:none;float:right;margin-top:15px;font-weight:bold;cursor:pointer}
 @media print {
     body * { visibility: hidden; }
     .printable, .printable * { visibility: visible; }
-    .printable { position: absolute; left: 0; top: 0; width: 100%; font-size: 18px; }
-    .print-btn, .del-btn, h2, button { display: none !important; }
+    .printable { position: fixed; left: 0; top: 0; width: 100%; padding: 20px; background: white; z-index: 9999; font-size: 20px; }
 }
 </style>
 <script>
 function printOrder(id) {
-    const printContent = document.getElementById('print-area-'+id).innerHTML;
-    const printWindow = window.open('', '', 'height=500,width=500');
-    printWindow.document.write('<html><head><title>列印訂單</title>');
-    printWindow.document.write('<style>body{font-family:sans-serif;padding:20px;} .t{font-size:14px;color:gray;}</style>');
-    printWindow.document.write('</head><body>');
-    printWindow.document.write(printContent);
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.print();
+    const content = document.getElementById('print-area-' + id);
+    content.classList.add('printable');
+    window.print();
+    content.classList.remove('printable');
 }
 function backup(){fetch('/get_backup_text').then(r=>r.json()).then(d=>{let t=document.createElement('textarea');t.value=d.text;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('備份已複製！');});}
 function del(id,e){if(confirm('完成此單？(明細會消失，但金額會保留在總額中)')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`id=${id}`}).then(()=>e.closest('.order-item').style.display='none');}}
@@ -233,16 +289,16 @@ function del(id,e){if(confirm('完成此單？(明細會消失，但金額會保
 <button onclick="backup()" style="width:100%;padding:10px;background:#3498db;color:white;border:none;border-radius:5px;margin-bottom:20px;">📥 複製今日備份</button>
 {% for h in logs %}
 <div class="order-item">
-    <div id="print-area-{{h.id}}" class="printable">
-        <span style="float:right;color:gray;" class="t">{{ h.time.strftime('%H:%M') }}</span>
+    <div id="print-area-{{h.id}}">
+        <span style="float:right;color:gray;">{{ h.time.strftime('%H:%M') }}</span>
         <b style="font-size:20px;">{{ h.loc }}</b><br>
         <div style="margin:10px 0; border-top:1px dashed #ccc; padding-top:5px;">
             {{ h.summary.replace(', ', '<br>') | safe }}
         </div>
         <b style="font-size:18px;">總金額：${{ h.price }}</b>
     </div>
-    <button class="print-btn" onclick="printOrder('{{h.id}}')">🖨️ 列印訂單</button>
-    <button class="del-btn" onclick="del('{{h.id}}',this)" style="color:green;border:none;background:none;float:right;margin-top:15px;font-weight:bold;">[✔ 完成/刪除]</button>
+    <button class="print-btn" onclick="printOrder('{{h.id}}')">🖨️ 直接列印</button>
+    <button class="del-btn" onclick="del('{{h.id}}',this)">[✔ 完成/刪除]</button>
 </div>
 {% endfor %}</body></html>
 """
