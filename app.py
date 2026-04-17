@@ -35,19 +35,19 @@ MENU_DATA = {
         {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
     "泡麵系列 (2包)": [
-        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"}, 
-        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
-        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
-        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
-        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"}
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"}, 
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"},
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"},
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"},
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True, "sub": "無肉絲 / 附高麗菜,紅蘿蔔,洋蔥,蒜碎,蔥花,玉米"},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True, "sub": "無肉絲 / 附高麗菜,紅蘿蔔,洋蔥,蒜碎,蔥花,玉米"},
-        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"}, 
-        {"name": "起司魂炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
-        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"},
-        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料: 高麗菜,紅蘿蔔,洋蔥,肉絲,蒜碎,蔥花,玉米"}
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "sub": "無肉絲/附配料"},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "sub": "無肉絲/附配料"},
+        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"}, 
+        {"name": "起司魂炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"},
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"},
+        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "配料:高麗菜,紅蘿蔔,洋蔥,肉絲,蒜,蔥,玉米"}
     ],
     "果醬吐司/厚片": [
         {"name": "巧克力吐司", "price": 25, "is_jam": True}, {"name": "巧克力厚片", "price": 30, "is_jam": True},
@@ -58,6 +58,3 @@ MENU_DATA = {
     "烤吐司系列": [
         {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "sub": "無生菜番茄"},
         {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True},
-        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "no_v": True},
-        {"name
