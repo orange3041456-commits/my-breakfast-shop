@@ -9,7 +9,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
 
-# --- 更新後的菜單資料 ---
+# --- 菜單資料 ---
 MENU_DATA = {
     "吃爽組合 (套餐)": [
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "薯條/雞塊 二選一", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
@@ -126,4 +126,13 @@ def clear():
         now = datetime.now()
         summary = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
         total_income += t
-        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary
+        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": now}
+        history.append(order)
+        session.clear()
+        return render_template_string(PRINT_HTML, order=order)
+    return redirect("/")
+
+@app.route("/boss")
+def boss():
+    if request.args.get("pw") != BOSS_PASSWORD: return "<h1>❌</h1>", 403
+    return render_template_string(BOSS_HTML, total=total_income
