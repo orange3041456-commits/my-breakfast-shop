@@ -162,4 +162,21 @@ function setOrderType(t,b){ fetch('/update_info',{method:'POST',headers:{'Conten
 function setTable(n,b){ currentTable = n; fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`type=內用&table=${n}`}); document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }
 function addToCart(n,p,i){
     let fn=n, fp=p;
-    Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')){fn+='+'+
+    Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')){fn+='+'+selectedOptions[k].name;fp+=selectedOptions[k].price;}});
+    fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`name=${encodeURIComponent(fn)}&price=${fp}`})
+    .then(r=>r.json()).then(d=>{
+        document.getElementById('c-count').innerText=d.count;
+        document.getElementById('c-total').innerText=d.total;
+        document.querySelectorAll(`[data-item="${i}"]`).forEach(x=>x.classList.remove('active'));
+        Object.keys(selectedOptions).forEach(k=>{if(k.startsWith(i+'_')) delete selectedOptions[k];});
+    });
+}
+function toggleOpt(i,n,p,b){
+    let k=i+'_'+n;
+    if(selectedOptions[k]){delete selectedOptions[k]; b.classList.remove('active');}
+    else{selectedOptions[k]={name:n,price:p}; b.classList.add('active');}
+}
+</script></head>
+<body>
+<div class="header" onmousedown="startHold()" onmouseup="endHold()" ontouchstart="startHold()" ontouchend="endHold()">🍜 晨食麵所</div>
+<div class="order
