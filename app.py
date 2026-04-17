@@ -9,6 +9,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
 
+# --- 完整的菜單資料 ---
 MENU_DATA = {
     "吃爽組合 (套餐)": [
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "薯條/雞塊 二選一", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
@@ -22,10 +23,12 @@ MENU_DATA = {
         {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
         {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, 
         {"name": "起司蛋餅", "price": 40, "can_add": True},
-        {"name": "里肌肉蛋餅", "price": 50, "can_add": True}
+        {"name": "里肌肉蛋餅", "price": 50, "can_add": True},
+        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
     "泡麵/炒麵系列": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True}, 
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True},
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True}, 
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True}
     ],
@@ -43,11 +46,16 @@ MENU_DATA = {
         {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True}
     ],
     "單點小點": [
-        {"name": "荷包蛋", "price": 15}, {"name": "熱狗(3支)", "price": 20}, {"name": "薯餅", "price": 25},
-        {"name": "小肉豆", "price": 40}, {"name": "雞柳條", "price": 50}
+        {"name": "荷包蛋", "price": 15}, 
+        {"name": "熱狗(3支)", "price": 20}, 
+        {"name": "薯餅", "price": 25},
+        {"name": "小肉豆", "price": 40}, 
+        {"name": "雞柳條", "price": 50}
     ],
     "飲品 (L)": [
-        {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, {"name": "冷泡茶", "price": 25}
+        {"name": "紅茶", "price": 25}, 
+        {"name": "香醇奶茶", "price": 30}, 
+        {"name": "冷泡茶", "price": 25}
     ]
 }
 
@@ -96,7 +104,7 @@ def clear():
     if t > 0:
         loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
         counts = Counter([i['name'] for i in cart])
-        now = datetime.now().strftime('%H:%M')
+        now = datetime.now()
         summary = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
         total_income += t
         order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": now}
@@ -117,9 +125,7 @@ def delete_order():
     history = [h for h in history if h['id'] != oid]
     return jsonify({"status": "ok"})
 
-# ------------------------------------------------------------------
-# HTML 模板
-# ------------------------------------------------------------------
+# --- HTML 介面 ---
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -146,7 +152,7 @@ INDEX_HTML = """
     </style>
     <script>
         let opts={}; let curT="{{table_id if table_id else ''}}"; let tmr;
-        function start(){tmr=setTimeout(function(){let p=prompt("PW:"); if(p)location.href="/boss?pw="+p},3000)}
+        function start(){tmr=setTimeout(function(){let p=prompt("後台密碼:"); if(p)location.href="/boss?pw="+p},3000)}
         function end(){clearTimeout(tmr)}
         function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');let s=document.getElementById('ts');if(s)s.style.display=(t==='內用')?'block':'none'}
         function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
@@ -184,68 +190,4 @@ INDEX_HTML = """
     <div class="header" onmousedown="start()" onmouseup="end()" ontouchstart="start()" ontouchend="end()">🍜 晨食麵所</div>
     <div class="setup">
         {% if table_id %}<div style="text-align:center;font-weight:bold;color:#5d4037">內用：{{table_id}}桌</div>
-        {% else %}用餐：<button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button><button class="btn type-btn" onclick="setT('內用',this)">內用</button>
-        <div id="ts" style="display:none;margin-top:10px">桌號：{% for n in range(1,6) %}<button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>{% endfor %}</div>{% endif %}
-    </div>
-    {% for cat,items in menu.items() %}
-    <div class="title">{{cat}}</div>
-    {% for item in items %}
-    {% set iid = "id" ~ loop.index ~ cat[0] %}
-    <div class="card">
-        <div class="row">
-            <div>
-                <strong style="font-size:14px">{{item.name}}</strong>
-                {% if item.sub %}<span class="sub-text">{{item.sub}}</span>{% endif %}
-                <br><span class="price">${{item.price}}</span>
-            </div>
-            <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}')">加入 +</button>
-        </div>
-        <div class="grid">
-            {% if item.can_add %}
-            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋($15)</div>
-            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌($25)</div>
-            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司($15)</div>
-            {% if item.no_v %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加菜',0,this)" style="color:#e74c3c">✘加菜</div>{% endif %}
-            {% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加辣',0,this)" style="color:#d35400">🔥加辣</div>{% endif %}
-            {% endif %}
-            
-            {% if item.is_jam %}
-            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>
-            {% endif %}
-
-            {% if item.opts %}{% for group in item.opts %}{% set gidx=loop.index %}
-            {% for o in group %}<div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>{% endfor %}
-            {% endfor %}{% endif %}
-        </div>
-    </div>
-    {% endfor %}{% endfor %}
-    <div class="footer"><span>已點 <span id="cc">{{cart_len}}</span> | $<span id="ct">{{total}}</span></span><a href="/cart" style="background:#ffbe00;color:#000;padding:8px 15px;border-radius:20px;text-decoration:none;font-weight:bold">去結帳</a></div>
-</body>
-</html>
-"""
-
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0}</style></head>
-<body><div style="max-width:500px;margin:auto"><h3>🛒 訂單確認</h3><p>用餐：{{loc}}</p>
-{% for n,c in counts.items() %}<p>{{n}} <span style="color:red">x {{c}}</span></p>{% endfor %}<hr><h4>總計: ${{total}}</h4>
-<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;font-size:18px">確認送出並列印</button></form><br><a href="/" style="color:gray">返回修改</a></div></body></html>
-"""
-
-PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-body{font-family:sans-serif;text-align:center;padding-top:50px}.t{display:none}
-@media print{body *{visibility:hidden}.t,.t *{visibility:visible}.t{display:block;position:fixed;left:0;top:0;width:100%;font-size:24px;padding:20px}}
-</style><script>window.onload=function(){window.print();setTimeout(function(){location.href='/'},1500)}</script></head>
-<body><h2>✅ 訂單已完成</h2><div class="t"><span style="float:right">{{order.time}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
-"""
-
-BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-body{font-family:sans-serif;background:#f4f4f4;padding:10px}.o{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px}
-</style><script>function del(id,e){if(confirm('完成？')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(function(){e.closest('.o').style.display='none'})}}</script></head>
-<body><div style="display:flex;justify-content:space-between"><h2>💰 營收：${{total}}</h2><button onclick="location.href='/'">回首頁</button></div>
-{% for h in logs %}<div class="o"><span style="float:right;color:gray">{{h.time}}</span><b>{{h.loc}}</b><br><p>{{h.summary|safe}}</p><b>${{h.price}}</b><button onclick="del('{{h.id}}',this)" style="float:right;color:green;border:none;background:none;font-weight:bold">[完成]</button></div>{% endfor %}</body></html>
-"""
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+        {% else %}用餐：<button class="btn type-btn active" onclick="setT
