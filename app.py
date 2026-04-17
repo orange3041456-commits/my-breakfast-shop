@@ -11,7 +11,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 # --- 密碼設定 ---
 BOSS_PASSWORD = "8888" 
 
-# --- 菜單資料 ---
+# --- 完整菜單資料 (已更新份量標記) ---
 MENU_DATA = {
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
@@ -23,12 +23,12 @@ MENU_DATA = {
         {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True}, {"name": "里肌肉蛋餅", "price": 50, "can_add": True}, 
         {"name": "厚切牛肉蛋餅", "price": 60, "can_add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
-    "泡麵系列": [
+    "泡麵系列 (2包泡麵)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True}, {"name": "起司魂炒泡麵", "price": 75, "can_add": True}, 
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True}, {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True}, 
         {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True}
     ],
-    "炒麵系列": [
+    "炒麵系列 (200g)": [
         {"name": "蘑菇炒麵", "price": 55, "can_add": True}, {"name": "黑胡椒炒麵", "price": 55, "can_add": True}, 
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True}, {"name": "起司魂炒麵", "price": 75, "can_add": True}, 
         {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True}, {"name": "經典沙茶炒麵", "price": 75, "can_add": True}
@@ -188,7 +188,7 @@ function toggleOpt(i,n,p,b){
     {% endif %}
 </div>
 {% for cat, items in menu.items() %}<div class="section-title">{{ cat }}</div>{% for item in items %}
-{% set itemId = loop.index0 ~ cat | replace("/", "") | replace(" ", "") %}
+{% set itemId = loop.index0 ~ cat | replace("/", "") | replace(" ", "") | replace("(", "") | replace(")", "") %}
 <div class="item-card"><div class="item-row"><div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div><button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, '{{ itemId }}')">加入 +</button></div>
 {% if item.can_add %}<div class="opt-grid">
     <div class="opt-btn" data-item="{{ itemId }}" onclick="toggleOpt('{{ itemId }}', '加蛋', 15, this)">+ 加蛋 ($15)</div>
@@ -214,37 +214,4 @@ AUTO_PRINT_HTML = """
     @media print {
         body * { visibility: hidden; }
         .ticket, .ticket * { visibility: visible; }
-        .ticket { display: block; position: fixed; left: 0; top: 0; width: 100%; font-size: 24px; padding: 20px; text-align: left; }
-    }
-</style>
-<script>
-    window.onload = function() { window.print(); setTimeout(function(){ location.href='/'; }, 1500); }
-</script></head>
-<body>
-    <h2>✅ 訂單已完成</h2><p>正在彈出列印選單...</p>
-    <div class="ticket">
-        <span style="float:right;">{{ order.time }}</span><b style="font-size:30px;">{{ order.loc }}</b><hr>
-        <div style="margin:20px 0;">{{ order.summary | safe }}</div><hr>
-        <b>總金額：${{ order.price }}</b>
-    </div>
-</body></html>
-"""
-
-BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>後台管理</title><style>
-body{font-family:sans-serif;background:#f4f4f4;padding:10px}
-.order-item{background:white;padding:15px;margin-bottom:10px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
-</style><script>
-function del(id,e){ if(confirm('確定刪除明細？')){ fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`id=${id}`}).then(()=>e.closest('.order-item').style.display='none'); }}
-</script></head>
-<body>
-<div style="display:flex; justify-content:space-between; align-items:center;"><h2>💰 總營收：${{ total }}</h2><button onclick="location.href='/'">回點餐頁</button></div>
-{% for h in logs %}<div class="order-item">
-<span style="float:right; color:gray;">{{ h.time }}</span><b>{{ h.loc }}</b><br>
-<p>{{ h.summary | safe }}</p><b>金額：${{ h.price }}</b>
-<button onclick="del('{{h.id}}',this)" style="float:right; color:green; border:none; background:none; font-weight:bold;">[✔ 完成]</button>
-</div>{% endfor %}</body></html>
-"""
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+        .ticket { display: block; position: fixed; left: 0; top
