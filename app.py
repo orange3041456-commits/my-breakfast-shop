@@ -20,22 +20,12 @@ MENU_DATA = {
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
         {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, {"name": "起司蛋餅", "price": 40, "can_add": True},
-        {"name": "蔬菜蛋餅", "price": 40, "can_add": True}, {"name": "火腿蛋餅", "price": 40, "can_add": True}, 
         {"name": "里肌肉蛋餅", "price": 50, "can_add": True}
     ],
-    "泡麵系列": [
+    "泡麵/炒麵系列": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True}, 
-        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True}, 
-        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True}
-    ],
-    "炒麵系列": [
-        {"name": "蘑菇炒麵", "price": 55, "can_add": True, "can_spicy": True}, 
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True}, 
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True}
-    ],
-    "果醬系列": [
-        {"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30},
-        {"name": "花生吐司", "price": 25}, {"name": "花生厚片", "price": 30}
     ],
     "烤吐司系列": [
         {"name": "煎蛋吐司", "price": 35, "can_add": True}, 
@@ -80,3 +70,5 @@ def add():
 
 @app.route("/cart")
 def view_cart():
+    cart = session.get('cart', [])
+    info = session.
