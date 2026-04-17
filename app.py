@@ -4,7 +4,7 @@ import os
 app = Flask(__name__)
 app.secret_key = "morning_noodle_fast_99"
 
-# --- 菜單資料 (保持不變) ---
+# --- 菜單資料 ---
 MENU = {
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30}, {"name": "蔥香蛋餅", "price": 35}, {"name": "肉鬆蛋餅", "price": 40},
@@ -43,7 +43,6 @@ MENU = {
     ]
 }
 
-# 全域數據
 history = []
 total_income = 0
 
@@ -58,41 +57,31 @@ HTML_TEMPLATE = """
         body { font-family: sans-serif; background: #fdfaf0; margin: 0; padding: 10px; padding-bottom: 80px; }
         .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; }
         .section-title { background: #5d4037; color: white; padding: 5px 12px; border-radius: 4px; margin-top: 15px; font-size: 14px; }
-        .item-card { background: white; padding: 10px; margin: 6px 0; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .item-card { background: white; padding: 12px; margin: 8px 0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .item-row { display: flex; justify-content: space-between; align-items: center; }
         .price { color: #e67e22; font-weight: bold; }
         .add-btn { background: #ffbe00; border: none; padding: 8px 14px; border-radius: 15px; font-weight: bold; cursor: pointer; }
-        .opt-box { margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
-        .opt-btn { background: #eee; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
-        .opt-btn.active { background: #4CAF50; color: white; }
+        .opt-grid { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; border-top: 1px dashed #eee; padding-top: 10px; }
+        .quick-add { background: #f8f9fa; border: 1px solid #ddd; padding: 8px 4px; border-radius: 6px; font-size: 12px; text-align: center; cursor: pointer; font-weight: bold; }
+        .quick-add span { color: #d35400; display: block; font-size: 10px; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .msg { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; display: none; z-index: 999; }
+        .msg { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: white; padding: 8px 16px; border-radius: 20px; display: none; z-index: 999; }
     </style>
     <script>
-        function addToCart(name, price, element) {
-            let finalName = name;
-            let finalPrice = price;
-            if (element) {
-                const card = element.closest('.item-card');
-                const opts = card.querySelectorAll('.opt-btn.active');
-                opts.forEach(opt => {
-                    finalName += " + " + opt.dataset.label;
-                    finalPrice += parseInt(opt.dataset.price);
-                });
-            }
+        function directAdd(name, price) {
             fetch('/add', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `name=${encodeURIComponent(finalName)}&price=${finalPrice}`
+                body: `name=${encodeURIComponent(name)}&price=${price}`
             }).then(r => r.json()).then(data => {
                 document.getElementById('c-count').innerText = data.count;
                 document.getElementById('c-total').innerText = data.total;
                 const m = document.getElementById('msg-box');
-                m.innerText = '已加入購物車';
+                m.innerText = '已加入：' + name;
                 m.style.display = 'block';
                 setTimeout(() => { m.style.display = 'none'; }, 800);
             });
         }
-        function toggleOpt(btn) { btn.classList.toggle('active'); }
     </script>
 </head>
 <body>
@@ -102,17 +91,22 @@ HTML_TEMPLATE = """
     <div class="section-title">{{ cat }}</div>
     {% for item in items %}
     <div class="item-card">
-        <div style="flex:1">
-            <strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span>
-            {% if item.can_add %}
-            <div class="opt-box">
-                <button class="opt-btn" data-label="加蛋" data-price="15" onclick="toggleOpt(this)">+蛋15</button>
-                <button class="opt-btn" data-label="加里肌" data-price="25" onclick="toggleOpt(this)">+里肌25</button>
-                <button class="opt-btn" data-label="加起司" data-price="15" onclick="toggleOpt(this)">+起司15</button>
-            </div>
+        <div class="item-row">
+            <div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div>
+            {% if not item.can_add %}
+            <button class="add-btn" onclick="directAdd('{{ item.name }}', {{ item.price }})">加入 +</button>
+            {% else %}
+            <button class="add-btn" style="background:#eee;" onclick="directAdd('{{ item.name }}', {{ item.price }})">原味加入</button>
             {% endif %}
         </div>
-        <button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }}, this)">加入 +</button>
+        
+        {% if item.can_add %}
+        <div class="opt-grid">
+            <div class="quick-add" onclick="directAdd('{{ item.name }}+加蛋', {{ item.price + 15 }})">+ 加蛋<span>$15</span></div>
+            <div class="quick-add" onclick="directAdd('{{ item.name }}+加里肌', {{ item.price + 25 }})">+ 加里肌<span>$25</span></div>
+            <div class="quick-add" onclick="directAdd('{{ item.name }}+加起司', {{ item.price + 15 }})">+ 加起司<span>$15</span></div>
+        </div>
+        {% endif %}
     </div>
     {% endfor %}
     {% endfor %}
@@ -142,12 +136,16 @@ def view_cart():
     cart = session.get('cart', [])
     t = sum(i['price'] for i in cart)
     return render_template_string("""
-    <div style="padding:20px; font-family:sans-serif;">
+    <div style="padding:20px; font-family:sans-serif; max-width:500px; margin:auto;">
         <h3>🛒 我的訂單</h3>
-        {% for i in cart %}<p>{{ i.name }} - ${{ i.price }}</p>{% endfor %}
-        <hr><h4>總計: ${{ total }}</h4>
+        {% for i in cart %}
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+            <span>{{ i.name }}</span><span>${{ i.price }}</span>
+        </div>
+        {% endfor %}
+        <h4 style="text-align:right;">總計: ${{ total }}</h4>
         <a href="/clear" style="display:block; background:#ffbe00; padding:15px; text-align:center; text-decoration:none; color:000; border-radius:10px; font-weight:bold;">確認送出</a>
-        <p style="text-align:center;"><a href="/" style="color:gray;">回菜單</a></p>
+        <p style="text-align:center;"><a href="/" style="color:gray; text-decoration:none;">回菜單</a></p>
     </div>
     """, cart=cart, total=t)
 
@@ -165,7 +163,6 @@ def clear():
 
 @app.route("/boss")
 def boss():
-    # 核心優化：只抓最新的 20 筆，載入極速
     display_history = history[::-1][:20]
     return render_template_string("""
     <div style="padding:20px; font-family:sans-serif; background:#fff; min-height:100vh;">
@@ -175,7 +172,7 @@ def boss():
         </div>
         <h4>最近 20 筆紀錄：</h4>
         <div style="font-size:13px; color:#666;">
-            {% for h in logs %}<div style="padding:8px 0; border-bottom:1px solid #eee;">{{ h }}</div>{% endfor %}
+            {% for h in logs %}<div style="padding:10px 0; border-bottom:1px solid #eee;">{{ h }}</div>{% endfor %}
         </div>
         <br><a href="/" style="color:blue;">回前台</a>
     </div>
