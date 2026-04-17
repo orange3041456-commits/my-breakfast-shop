@@ -21,49 +21,33 @@ MENU_DATA = {
         {"name": "原味蛋餅", "price": 30, "can_add": True}, {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
         {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, {"name": "起司蛋餅", "price": 40, "can_add": True},
         {"name": "蔬菜蛋餅", "price": 40, "can_add": True}, {"name": "火腿蛋餅", "price": 40, "can_add": True}, 
-        {"name": "香煎培根蛋餅", "price": 40, "can_add": True}, {"name": "熱狗蛋餅", "price": 40, "can_add": True}, 
-        {"name": "塔香蛋餅", "price": 40, "can_add": True}, {"name": "玉米蛋餅", "price": 40, "can_add": True}, 
-        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True}, {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True}, 
-        {"name": "里肌肉蛋餅", "price": 50, "can_add": True}, {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
+        {"name": "里肌肉蛋餅", "price": 50, "can_add": True}
     ],
-    "泡麵系列 (2包/配料:高麗菜.紅蘿蔔.洋蔥.肉絲.蒜.蔥.玉米)": [
+    "泡麵系列 (配料:高麗菜.紅蘿蔔.洋蔥.肉絲.蒜.蔥.玉米)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True}, 
         {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True}, 
-        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True}, 
-        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "can_spicy": True}, 
-        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True}
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True}
     ],
-    "炒麵系列 (200g/配料:高麗菜.紅蘿蔔.洋蔥.肉絲.蒜.蔥.玉米)": [
+    "炒麵系列 (配料:高麗菜.紅蘿蔔.洋蔥.肉絲.蒜.蔥.玉米)": [
         {"name": "蘑菇炒麵", "price": 55, "can_add": True, "can_spicy": True}, 
-        {"name": "黑胡椒炒麵", "price": 55, "can_add": True, "can_spicy": True}, 
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True}, 
-        {"name": "起司魂炒麵", "price": 75, "can_add": True, "can_spicy": True}, 
-        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "can_spicy": True}, 
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True}
     ],
-    "果醬吐司/厚片 (酥一點)": [
-        {"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30}, {"name": "草莓吐司", "price": 25}, 
-        {"name": "草莓厚片", "price": 30}, {"name": "花生吐司", "price": 25}, {"name": "花生厚片", "price": 30}, 
-        {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}
+    "果醬吐司/厚片": [
+        {"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30},
+        {"name": "花生吐司", "price": 25}, {"name": "花生厚片", "price": 30}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司 (無生菜番茄)", "price": 35, "can_add": True}, 
-        {"name": "火腿吐司 (有生菜/番茄)", "price": 40, "can_add": True, "no_v": True}, 
-        {"name": "培根吐司 (有生菜/番茄)", "price": 40, "can_add": True, "no_v": True}, 
-        {"name": "麥香雞吐司 (有生菜/番茄)", "price": 40, "can_add": True, "no_v": True}, 
-        {"name": "鮪魚吐司 (有生菜/番茄)", "price": 50, "can_add": True, "no_v": True}, 
-        {"name": "薯餅吐司 (有生菜/番茄)", "price": 40, "can_add": True, "no_v": True},
+        {"name": "煎蛋吐司", "price": 35, "can_add": True}, 
         {"name": "里肌吐司 (有生菜/番茄)", "price": 55, "can_add": True, "no_v": True}, 
         {"name": "卡啦雞腿吐司 (有生菜/番茄)", "price": 60, "can_add": True, "no_v": True}
     ],
     "單點小點": [
-        {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35}, {"name": "蔥蛋", "price": 25},
-        {"name": "熱狗(3支)", "price": 20}, {"name": "薯餅", "price": 25}, {"name": "麥克雞塊", "price": 45},
-        {"name": "小肉豆", "price": 40}, {"name": "美式脆條", "price": 45}, {"name": "雞柳條", "price": 50}, 
-        {"name": "黃金蝦排", "price": 35}
+        {"name": "荷包蛋", "price": 15}, {"name": "熱狗(3支)", "price": 20}, {"name": "薯餅", "price": 25},
+        {"name": "小肉豆", "price": 40}, {"name": "雞柳條", "price": 50}
     ],
     "飲品 (L)": [
-        {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, {"name": "鮮奶茶", "price": 45}, {"name": "豆漿紅茶", "price": 40}, {"name": "冷泡茶", "price": 25}
+        {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, {"name": "冷泡茶", "price": 25}
     ]
 }
 
@@ -87,16 +71,4 @@ def update_info():
     session['info'] = {"type": request.form.get("type"), "table": request.form.get("table")}
     return jsonify({"status": "ok"})
 
-@app.route("/add", methods=["POST"])
-def add():
-    temp = session.get('cart', [])
-    temp.append({"name": request.form.get("name"), "price": int(request.form.get("price"))})
-    session['cart'] = temp
-    return jsonify({"count": len(session['cart']), "total": sum(i['price'] for i in session['cart'])})
-
-@app.route("/cart")
-def view_cart():
-    cart = session.get('cart', [])
-    info = session.get('info', {"type": "外帶", "table": ""})
-    t = sum(i['price'] for i in cart)
-    counts =
+@app.route("/add
