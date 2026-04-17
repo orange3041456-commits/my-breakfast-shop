@@ -1,9 +1,9 @@
-from flask import Flask, render_template_string, request, redirect, url_for
+from flask import Flask, render_template_string, request, jsonify
 import os
 
 app = Flask(__name__)
 
-# --- 完整菜單資料 ---
+# --- 菜單資料 (保持不變) ---
 MENU = {
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30}, {"name": "蔥香蛋餅", "price": 35}, {"name": "肉鬆蛋餅", "price": 40},
@@ -61,21 +61,45 @@ HTML = """
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>活力晨食點餐系統</title>
     <style>
-        body { font-family: 'PingFang TC', sans-serif; background-color: #fdfaf0; color: #444; margin: 0; padding: 15px; }
+        body { font-family: sans-serif; background-color: #fdfaf0; color: #444; margin: 0; padding: 15px; }
         .header { background: #ffbe00; color: #fff; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-        .section-title { background: #5d4037; color: white; padding: 8px 15px; border-radius: 5px; margin-top: 20px; }
+        .section-title { background: #5d4037; color: white; padding: 8px 15px; border-radius: 5px; margin-top: 20px; font-size: 18px; }
         .item-card { background: white; padding: 12px; margin: 8px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .price { color: #e67e22; font-weight: bold; }
-        .add-btn { background: #ffbe00; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-        .footer-cart { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .add-btn { background: #ffbe00; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        .add-btn:active { background: #e6ac00; transform: scale(0.9); }
+        .footer-cart { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         .checkout-link { background: #ffbe00; color: black; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; }
-        .cart-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; }
+        .msg { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; display: none; z-index: 1000; }
     </style>
+    <script>
+        function addToCart(name, price) {
+            // 使用 Fetch API 非同步發送請求，不重新整理網頁
+            fetch('/add', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `name=${encodeURIComponent(name)}&price=${price}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 更新畫面上的數字
+                document.getElementById('cart-count').innerText = data.count;
+                document.getElementById('cart-total').innerText = data.total;
+                
+                // 顯示一個簡短的提示訊息
+                const msg = document.getElementById('msg-box');
+                msg.innerText = name + ' 已加入';
+                msg.style.display = 'block';
+                setTimeout(() => { msg.style.display = 'none'; }, 1000);
+            });
+        }
+    </script>
 </head>
 <body>
+    <div id="msg-box" class="msg"></div>
     <div class="header">🍳 活力晨食點餐</div>
     
     {% for cat, items in menu.items() %}
@@ -83,11 +107,7 @@ HTML = """
     {% for item in items %}
     <div class="item-card">
         <div><strong>{{ item.name }}</strong><br><span class="price">${{ item.price }}</span></div>
-        <form method="POST" action="/add">
-            <input type="hidden" name="name" value="{{ item.name }}">
-            <input type="hidden" name="price" value="{{ item.price }}">
-            <button class="add-btn">加入 +</button>
-        </form>
+        <button class="add-btn" onclick="addToCart('{{ item.name }}', {{ item.price }})">加入 +</button>
     </div>
     {% endfor %}
     {% endfor %}
@@ -95,8 +115,8 @@ HTML = """
     <div style="height: 100px;"></div>
 
     <div class="footer-cart">
-        <span>已點 {{ cart|length }} 項 | 總計: ${{ total }}</span>
-        <a href="/cart" class="checkout-link">查看清單 / 結帳</a>
+        <span>已點 <span id="cart-count">{{ cart_len }}</span> 項 | 共 $<span id="cart-total">{{ total }}</span></span>
+        <a href="/cart" class="checkout-link">看清單/結帳</a>
     </div>
 </body>
 </html>
@@ -107,18 +127,20 @@ HTML = """
 @app.route("/")
 def index():
     t = sum(i['price'] for i in cart)
-    return render_template_string(HTML, menu=MENU, cart=cart, total=t)
+    return render_template_string(HTML, menu=MENU, cart_len=len(cart), total=t)
 
 @app.route("/add", methods=["POST"])
 def add():
     name = request.form.get("name")
     price = int(request.form.get("price"))
     cart.append({"name": name, "price": price})
-    return redirect(url_for("index"))
+    # 返回 JSON 數據，讓前端 JavaScript 更新
+    return jsonify({"count": len(cart), "total": sum(i['price'] for i in cart)})
 
 @app.route("/cart")
 def view_cart():
     t = sum(i['price'] for i in cart)
+    # 購物車頁面簡單處理即可
     cart_page = """
     <div style="padding:20px; font-family:sans-serif;">
         <h2>🛒 我的點餐清單</h2>
@@ -143,23 +165,23 @@ def clear():
         items_str = ", ".join([i['name'] for i in cart])
         history.append(f"收入: ${t} | 品項: {items_str}")
         cart.clear()
-        return "<h1>訂單已送達廚房！感謝您的購買。</h1><a href='/'>回首頁</a>"
+        return "<div style='text-align:center; padding:50px; font-family:sans-serif;'><h1>🎉 訂單已送出！</h1><p>請至櫃檯結帳取餐。</p><br><a href='/'>回首頁</a></div>"
     return redirect("/")
 
 @app.route("/boss")
 def boss():
     return f"""
     <div style="font-family:sans-serif; padding:20px;">
-        <h1 style="color:#d35400;">💰 老闆營收報表</h1>
+        <h1 style="color:#d35400;">💰 老闆收銀台</h1>
         <div style="background:#2ecc71; color:white; padding:20px; border-radius:10px; font-size:24px;">
-            今日總收：<strong>${total_income}</strong>
+            今日累計：<strong>${total_income}</strong>
         </div>
         <hr>
-        <h3>訂單細節：</h3>
-        <ul>
+        <h3>訂單記錄：</h3>
+        <ul style="line-height:1.8;">
             {"".join([f"<li>{h}</li>" for h in history[::-1]])}
         </ul>
-        <a href="/">回到前台</a>
+        <a href="/">回前台</a>
     </div>
     """
 
