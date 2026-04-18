@@ -33,7 +33,6 @@ def sync_to_google(summary, price, info):
 # ==========================================
 # 🍱 [菜單資料]
 # ==========================================
-# 配料註記字串
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 
 MENU_DATA = {
@@ -226,7 +225,7 @@ INDEX_HTML = """
                 <button class="btn type-btn" onclick="setT('內用',this)">內用</button>
                 <div id="ts" style="display:none;margin-top:8px">
                     桌號：
-                    {% for n in range(1,11) %}
+                    {% for n in range(1,6) %}
                         <button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>
                     {% endfor %}
                 </div>
