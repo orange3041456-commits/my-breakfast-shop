@@ -13,9 +13,9 @@ BOSS_PASSWORD = "8888"
 # 🔗 [Google 試算表串聯設定]
 # ==========================================
 G_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe5HJ_rQDNaSXNo6l38DYMFErzna8Rmqjp8X61cgPZ2d8QOqA/formResponse"
-G_ENTRY_SUMMARY = "entry.303092604"  # 訂單內容
-G_ENTRY_PRICE = "entry.157627510"    # 金額
-G_ENTRY_TIME = "entry.1541194223"     # 時間與方式
+G_ENTRY_SUMMARY = "entry.303092604"  
+G_ENTRY_PRICE = "entry.157627510"    
+G_ENTRY_TIME = "entry.1541194223"     
 
 def sync_to_google(summary, price, info):
     """將訂單正式寫入 Google Sheets (由後台『完成』按鈕觸發)"""
@@ -27,12 +27,15 @@ def sync_to_google(summary, price, info):
     }
     try:
         requests.post(G_URL, data=payload, timeout=5)
-    except Exception as e:
-        print(f"同步失敗: {e}")
+    except:
+        pass
 
 # ==========================================
 # 🍱 [菜單資料]
 # ==========================================
+# 配料註記字串
+NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
+
 MENU_DATA = {
     "吃爽組合 (套餐)": [
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "薯條/雞塊 二選一", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
@@ -58,19 +61,19 @@ MENU_DATA = {
         {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
     "泡麵系列 (2包)": [
-        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True}, 
-        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True}
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB}, 
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB},
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB},
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True, "can_spicy": True},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True, "can_spicy": True},
-        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True}, 
-        {"name": "起司魂炒麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "can_spicy": True},
-        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True}
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "can_spicy": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "can_spicy": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB}, 
+        {"name": "起司魂炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB},
+        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
         {"name": "巧克力吐司", "price": 25, "is_jam": True}, {"name": "巧克力厚片", "price": 30, "is_jam": True},
@@ -79,14 +82,14 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25, "is_jam": True}, {"name": "奶酥厚片", "price": 30, "is_jam": True}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "薯餅吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True, "is_toast": True}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True, "is_toast": True}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "is_toast": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
@@ -167,7 +170,6 @@ def boss():
 
 @app.route("/delete_order", methods=["POST"])
 def delete_order():
-    """點擊『完成』按鈕：此時才同步到 Google 並從後台刪除"""
     global history
     oid = request.form.get("id")
     target = next((h for h in history if h['id'] == oid), None)
@@ -177,9 +179,7 @@ def delete_order():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# ==========================================
-# 🎨 [HTML 模板]
-# ==========================================
+# --- HTML 模板 ---
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -199,9 +199,10 @@ INDEX_HTML = """
         .price { color: #e67e22; font-weight: bold; font-size: 18px; margin-top: 5px; }
         .add { background: #ffbe00; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; font-size: 15px; cursor: pointer; }
         .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border-top: 1px dashed #eee; padding-top: 12px; }
-        .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; }
+        .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; color: #444; }
         .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; font-weight: bold; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        .sub-text { font-size: 12.5px; color: #888; display: block; margin-top: 4px; line-height: 1.2; }
     </style>
     <script>
         let opts={}; let curT="{{table_id if table_id else ''}}"; let tmr;
@@ -240,6 +241,7 @@ INDEX_HTML = """
                 <div class="row">
                     <div style="flex:1">
                         <strong style="font-size:16px;">{{item.name}}</strong>
+                        {% if item.sub %}<span class="sub-text">{{item.sub}}</span>{% endif %}
                         <div class="price">${{item.price}}</div>
                     </div>
                     <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}')">加入</button>
