@@ -19,20 +19,20 @@ MENU_DATA = {
         {"name": "巧克力薯餅吐司+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]}
     ],
     "蛋餅類": [
-        {"name": "原味蛋餅", "price": 30, "can_add": True}, 
-        {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
-        {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, 
-        {"name": "起司蛋餅", "price": 40, "can_add": True},
-        {"name": "蔬菜蛋餅", "price": 40, "can_add": True},
-        {"name": "火腿蛋餅", "price": 40, "can_add": True},
-        {"name": "香煎培根蛋餅", "price": 40, "can_add": True},
-        {"name": "熱狗蛋餅", "price": 40, "can_add": True},
-        {"name": "塔香蛋餅", "price": 40, "can_add": True},
-        {"name": "玉米蛋餅", "price": 40, "can_add": True},
-        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True},
-        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True},
-        {"name": "里肌肉蛋餅", "price": 50, "can_add": True},
-        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
+        {"name": "原味蛋餅", "price": 30, "can_add": True, "can_spicy": True}, 
+        {"name": "蔥香蛋餅", "price": 35, "can_add": True, "can_spicy": True}, 
+        {"name": "肉鬆蛋餅", "price": 40, "can_add": True, "can_spicy": True}, 
+        {"name": "起司蛋餅", "price": 40, "can_add": True, "can_spicy": True},
+        {"name": "蔬菜蛋餅", "price": 40, "can_add": True, "can_spicy": True},
+        {"name": "火腿蛋餅", "price": 40, "can_add": True, "can_spicy": True},
+        {"name": "香煎培根蛋餅", "price": 40, "can_add": True, "can_spicy": True},
+        {"name": "熱狗蛋餅", "price": 40, "can_add": True, "can_spicy": True},
+        {"name": "塔香蛋餅", "price": 40, "can_add": True, "can_spicy": True},
+        {"name": "玉米蛋餅", "price": 40, "can_add": True, "can_spicy": True},
+        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True, "can_spicy": True},
+        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "can_spicy": True},
+        {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "can_spicy": True},
+        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "can_spicy": True}
     ],
     "泡麵系列 (2包)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True, "sub": "內含:高麗菜,紅蘿蔔,肉絲,洋蔥,蒜碎,蔥花,玉米"}, 
@@ -42,8 +42,8 @@ MENU_DATA = {
         {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "內含:高麗菜,紅蘿蔔,肉絲,洋蔥,蒜碎,蔥花,玉米"}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True, "sub": "【無肉絲】附基本配料"},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "can_spicy": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "can_spicy": True, "sub": "【無肉絲】附基本配料"},
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "can_spicy": True, "sub": "內含:高麗菜,紅蘿蔔,肉絲,洋蔥,蒜碎,蔥花,玉米"}, 
         {"name": "起司魂炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "內含:高麗菜,紅蘿蔔,肉絲,洋蔥,蒜碎,蔥花,玉米"},
         {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "can_spicy": True, "sub": "內含:高麗菜,紅蘿蔔,肉絲,洋蔥,蒜碎,蔥花,玉米"},
@@ -227,12 +227,12 @@ INDEX_HTML = """
                         {% if item.is_toast %}
                             <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>
                         {% endif %}
-                        {% if item.can_spicy %}
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:#d35400;">🌶️特製辣</div>
-                        {% endif %}
                     {% endif %}
                     {% if item.is_jam %}
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>
+                    {% endif %}
+                    {% if item.can_spicy %}
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:#d35400;">🌶️特製辣</div>
                     {% endif %}
                     {% if item.opts %}
                         {% for group in item.opts %}
