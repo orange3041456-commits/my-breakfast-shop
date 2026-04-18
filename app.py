@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v9_linepay"
+app.secret_key = "morning_noodle_v10_reset_fix"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -19,7 +19,6 @@ G_ENTRY_TIME = "entry.1541194223"
 
 def sync_to_google(summary, price, info, pay_method="現金"):
     clean_summary = summary.replace('<br>', ' | ')
-    # 在時間資訊後方加入支付方式
     final_info = f"{datetime.now().strftime('%m/%d %H:%M:%S')} ({info}-{pay_method})"
     payload = {
         G_ENTRY_SUMMARY: clean_summary,
@@ -162,8 +161,7 @@ def clear():
         order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now(), "done": False, "pay": "未選"}
         history.append(order)
         session['cart'] = [] 
-        if is_boss:
-            return redirect(url_for('boss', pw=BOSS_PASSWORD))
+        if is_boss: return redirect(url_for('boss', pw=BOSS_PASSWORD))
         return render_template_string(SUCCESS_HTML)
     return redirect("/")
 
@@ -178,18 +176,27 @@ def print_order(oid):
     if target: return render_template_string(PRINT_HTML, order=target)
     return "單據不存在", 404
 
-# --- [ 修改後的結帳邏輯：支援 LINE Pay 選項 ] ---
 @app.route("/finish_order", methods=["POST"])
 def finish_order():
     oid = request.form.get("id")
     method = request.form.get("method", "現金")
     target = next((h for h in history if h['id'] == oid), None)
     if target:
-        if not target['done']:
-            sync_to_google(target['summary'], target['price'], target['loc'], method)
-            target['done'] = True
-            target['pay'] = method
+        sync_to_google(target['summary'], target['price'], target['loc'], method)
+        target['done'] = True
+        target['pay'] = method
         return jsonify({"status": "ok", "method": method})
+    return jsonify({"status": "error"}), 404
+
+# --- [ 新增：重設訂單結帳狀態 ] ---
+@app.route("/reset_order", methods=["POST"])
+def reset_order():
+    oid = request.form.get("id")
+    target = next((h for h in history if h['id'] == oid), None)
+    if target:
+        target['done'] = False
+        target['pay'] = "未選"
+        return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
 @app.route("/remove_order", methods=["POST"])
@@ -289,27 +296,30 @@ INDEX_HTML = """
 """
 
 BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="20">
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="30">
 <style>
     body{font-family:sans-serif;background:#f4f4f4;padding:15px;margin-bottom:80px;}
     .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}
-    .o.is-done { opacity: 0.6; border-left-color: #bdc3c7; background: #f9f9f9; }
+    .o.is-done { opacity: 0.7; border-left-color: #bdc3c7; background: #fdfdfd; }
     .btn-print{background:#333;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;}
     .btn-cash{background:#27ae60;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;margin-left:5px;}
     .btn-line{background:#00b900;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;margin-left:5px;}
+    .btn-reset{background:#fff;color:#e67e22;border:1px solid #e67e22;padding:5px 10px;border-radius:8px;font-size:13px;cursor:pointer;margin-left:10px;}
     .btn-remove{background:#eee;color:#888;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:none;float:right;margin-top:10px;}
     .boss-nav { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
-    .pay-tag { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #eee; margin-left: 10px; color: #666; }
+    .pay-tag { font-size: 13px; font-weight: bold; color: #27ae60; border: 1px solid #27ae60; padding: 2px 8px; border-radius: 5px; }
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
     function finish(id, method, e){ 
         fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method})
-        .then(r=>r.json()).then(d=>{
-            let card = e.closest('.o');
-            card.classList.add('is-done');
-            card.querySelector('.action-area').innerHTML = '<b style="color:#27ae60">✅ 已存檔 ('+d.method+')</b>';
-        })
+        .then(()=>location.reload()) 
+    }
+    function resetOrder(id){
+        if(confirm('確定要撤回結帳狀態嗎？(試算表需手動刪除重複項)')){
+            fetch('/reset_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
+            .then(()=>location.reload())
+        }
     }
     function removeOrder(id,e){
         if(confirm('確定徹底刪除？')){
@@ -328,7 +338,6 @@ BOSS_HTML = """
     <div class="o {{ 'is-done' if h.done else '' }}">
         <span style="float:right;color:#888;">{{h.time.strftime('%H:%M:%S')}}</span>
         <strong style="font-size:22px;">{{h.loc}}</strong>
-        {% if h.done %}<span class="pay-tag">{{h.pay}}</span>{% endif %}
         <p style="background:#fffbe6;padding:12px;border-radius:8px;font-size:18px;line-height:1.4;">{{h.summary|safe}}</p>
         <div style="display:flex;justify-content:space-between;align-items:center;">
             <b style="font-size:22px;">${{h.price}}</b>
@@ -338,7 +347,8 @@ BOSS_HTML = """
                     <button class="btn-cash" onclick="finish('{{h.id}}','現金',this)">現金結帳</button>
                     <button class="btn-line" onclick="finish('{{h.id}}','LINE Pay',this)">LINE Pay</button>
                 {% else %}
-                    <b style="color:#27ae60">✅ 已存檔 ({{h.pay}})</b>
+                    <span class="pay-tag">{{h.pay}}已付</span>
+                    <button class="btn-reset" onclick="resetOrder('{{h.id}}')">🔄 改支付方式</button>
                 {% endif %}
             </div>
         </div>
