@@ -281,7 +281,7 @@ SUCCESS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>body{font-family:sans-serif;text-align:center;padding-top:100px;background:#fdfaf0;}</style>
 <script>setTimeout(()=>location.href='/', 5000)</script></head>
-<body><h1 style="color:#27ae60;">✅ 訂單已送出</h1><p>請等候櫃台叫號或送餐</p><br><a href="/">返回點餐首頁</a></body></html>
+<body><h1 style="color:#27ae60;">✅ 訂單已送出</h1><p>請至櫃台結帳</p><br><a href="/">返回點餐首頁</a></body></html>
 """
 
 BOSS_HTML = """
