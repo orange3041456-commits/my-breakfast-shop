@@ -1,10 +1,10 @@
 from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
 import os, secrets, requests, datetime
-import pytz
+import pytz  # 處理台灣時區
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v19_stable"
+app.secret_key = "morning_noodle_v17_final"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -34,7 +34,7 @@ def sync_to_google(summary, price, info, pay_method="現金"):
         pass
 
 # ==========================================
-# 🍱 [菜單資料]
+# 🍱 [完整菜單資料]
 # ==========================================
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 MENU_DATA = {
@@ -306,20 +306,17 @@ BOSS_HTML = """
     body{font-family:sans-serif;background:#f4f4f4;padding:15px;margin-bottom:80px;}
     .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}
     .o.is-done { opacity: 0.7; border-left-color: #bdc3c7; background: #fdfdfd; }
-    .btn-print{background:#333;color:#fff;padding:12px 18px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;}
+    .btn-print{background:#333;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;}
     .btn-cash{background:#27ae60;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;margin-left:5px;}
     .btn-line{background:#00b900;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;margin-left:5px;}
     .btn-reset{background:#fff;color:#e67e22;border:1px solid #e67e22;padding:5px 10px;border-radius:8px;font-size:13px;cursor:pointer;margin-left:10px;}
     .btn-remove{background:#eee;color:#888;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:none;float:right;margin-top:10px;}
     .boss-nav { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
-    .pay-tag { font-size: 15px; font-weight: bold; color: #27ae60; border: 1px solid #27ae60; padding: 4px 10px; border-radius: 5px; }
+    .pay-tag { font-size: 13px; font-weight: bold; color: #27ae60; border: 1px solid #27ae60; padding: 2px 8px; border-radius: 5px; }
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
-    function finish(id, method){ 
-        fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method})
-        .then(()=>location.reload()) 
-    }
+    function finish(id, method){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method}).then(()=>location.reload()) }
     function resetOrder(id){ if(confirm('撤回結帳狀態？')){ fetch('/reset_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload()) } }
     function removeOrder(id){ if(confirm('徹底刪除？')){ fetch('/remove_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload()) } }
 </script></head>
@@ -329,11 +326,11 @@ BOSS_HTML = """
     {% for h in logs %}
     <div class="o {{ 'is-done' if h.done else '' }}">
         <span style="float:right;color:#888;">{{h.time.strftime('%H:%M:%S')}}</span><strong style="font-size:22px;">{{h.loc}}</strong>
-        <p style="background:#fffbe6;padding:12px;border-radius:8px;font-size:18px;line-height:1.4;margin:10px 0;">{{h.summary|safe}}</p>
+        <p style="background:#fffbe6;padding:12px;border-radius:8px;font-size:18px;line-height:1.4;">{{h.summary|safe}}</p>
         <div style="display:flex;justify-content:space-between;align-items:center;">
-            <b style="font-size:24px;">${{h.price}}</b>
+            <b style="font-size:22px;">${{h.price}}</b>
             <div>
-                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️ 列印</button>
+                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️</button>
                 {% if not h.done %}<button class="btn-cash" onclick="finish('{{h.id}}','現金')">現金</button><button class="btn-line" onclick="finish('{{h.id}}','LINE Pay')">LINE Pay</button>
                 {% else %}<span class="pay-tag">{{h.pay}}已付</span><button class="btn-reset" onclick="resetOrder('{{h.id}}')">🔄 修改</button>{% endif %}
             </div>
@@ -360,30 +357,9 @@ SUCCESS_HTML = """
 """
 
 PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-    body { font-family: sans-serif; font-size: 26px; padding: 10px; line-height: 1.3; }
-    @media print { .no-print { display: none; } }
-</style>
-<script>
-    window.onload = function() {
-        window.print();
-        window.onafterprint = function() { window.close(); };
-        setTimeout(function() { if(!window.closed) window.close(); }, 1000);
-    }
-</script></head>
-<body>
-    <div style="font-weight:bold; border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:10px;">
-        <span style="float:right;">{{order.time.strftime('%H:%M')}}</span>
-        <span style="font-size:32px;">{{order.loc}}</span>
-    </div>
-    <div style="font-size:28px; margin-bottom:15px;">{{order.summary|safe}}</div>
-    <div style="border-top:2px solid #000; padding-top:10px; display:flex; justify-content:space-between; align-items:flex-end;">
-        <span style="font-size:20px; color:#333;">[{{order.pay}}付款]</span>
-        <b style="font-size:36px;">總計：${{order.price}}</b>
-    </div>
-    <div class="no-print" style="margin-top:50px; text-align:center; color:#888; font-size:16px; background:#eee; padding:10px;">列印中...印完自動關閉</div>
-</body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>@media print{.btn{display:none}}</style><script>window.onload=()=>{setTimeout(()=>window.print(),500)}</script></head>
+<body><button class="btn" onclick="window.print()" style="width:100%;padding:10px;">點此列印</button>
+<div style="font-size:22px;"><span style="float:right;">{{order.time.strftime('%H:%M')}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
 """
 
 if __name__ == "__main__":
