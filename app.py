@@ -4,11 +4,9 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-# 固定密鑰，確保伺服器重啟或網路波動時，客人的購物車不會被清空
-app.secret_key = "morning_noodle_pro_v1_fixed"
+app.secret_key = "morning_noodle_pro_v2_boss_mode"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
-# 老闆後台登入密碼
 BOSS_PASSWORD = "8888" 
 
 # ==========================================
@@ -112,14 +110,13 @@ def ensure_session():
     if 'cart' not in session: session['cart'] = []
     if 'info' not in session: session['info'] = {"type": "外帶", "table": ""}
 
-# --- [ 路由與 HTML 邏輯 ] ---
-
 @app.route("/")
 def index():
     cart = session.get('cart', [])
     tid = request.args.get('table')
+    is_boss = request.args.get('mode') == 'boss'
     if tid: session['info'] = {"type": "內用", "table": tid}
-    return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart), table_id=tid)
+    return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart), table_id=tid, is_boss=is_boss)
 
 @app.route("/update_info", methods=["POST"])
 def update_info():
@@ -167,8 +164,8 @@ def clear():
 
 @app.route("/boss")
 def boss():
-    if request.args.get("pw") != BOSS_PASSWORD: return "<h1>❌</h1>", 403
-    return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1])
+    if request.args.get("pw") != BOSS_PASSWORD: return "<h1>❌ 密碼錯誤</h1>", 403
+    return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1], pw=BOSS_PASSWORD)
 
 @app.route("/print_order/<oid>")
 def print_order(oid):
@@ -180,9 +177,11 @@ def print_order(oid):
 def delete_order():
     global history
     oid = request.form.get("id")
-    target = next((h for h in history if h['id'] == oid), None)
-    if target:
-        sync_to_google(target['summary'], target['price'], target['loc'])
+    target = next((h for h in history if h['id'] != oid), None)
+    # 這裡邏輯修正：找到要刪除的那筆來同步
+    sync_target = next((h for h in history if h['id'] == oid), None)
+    if sync_target:
+        sync_to_google(sync_target['summary'], sync_target['price'], sync_target['loc'])
         history = [h for h in history if h['id'] != oid]
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
@@ -193,7 +192,8 @@ INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <style>
     body { font-family: sans-serif; background: #fdfaf0; margin: 0; padding: 0 10px 100px; font-size: 15px; }
-    .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; font-size: 20px; }
+    .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; font-size: 20px; position: relative; }
+    .boss-back { position: absolute; left: 10px; top: 12px; background: #333; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 14px; text-decoration: none; }
     .setup { background: #fff; margin: 10px 0; padding: 12px; border-radius: 10px; border-left: 6px solid #ffbe00; }
     .btn { padding: 8px 15px; border: 1.5px solid #ddd; border-radius: 20px; background: #f8f9fa; margin: 3px; font-size: 14px; cursor: pointer; }
     .btn.active { background: #ffbe00; color: #000; font-weight: bold; border-color: #ffbe00; }
@@ -205,12 +205,12 @@ INDEX_HTML = """
     .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border-top: 1px dashed #eee; padding-top: 12px; }
     .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; }
     .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; }
-    .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
     .sub-text { font-size: 12px; color: #888; display: block; }
 </style>
 <script>
     let opts={}; let curT="{{table_id if table_id else ''}}"; let tmr;
-    function start(){tmr=setTimeout(()=>{let p=prompt("密碼:"); if(p)location.href="/boss?pw="+p},3000)}
+    function start(){tmr=setTimeout(()=>{let p=prompt("密碼:"); if(p)location.href="/boss?pw="+p},2500)}
     function end(){clearTimeout(tmr)}
     function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
@@ -231,11 +231,14 @@ INDEX_HTML = """
     }
 </script></head>
 <body>
-    <div class="header" onmousedown="start()" onmouseup="end()" ontouchstart="start()" ontouchend="end()">🍜 晨食麵所</div>
+    <div class="header" onmousedown="start()" onmouseup="end()" ontouchstart="start()" ontouchend="end()">
+        {% if is_boss %}<a href="/boss?pw=8888" class="boss-back">🔙 返回後台</a>{% endif %}
+        🍜 晨食麵所
+    </div>
     <div class="setup">
         {% if table_id %}<div style="text-align:center;font-weight:bold;color:#5d4037;">內用桌號：{{table_id}}</div>
         {% else %}
-        <div style="padding:5px;">用餐：
+        <div style="padding:5px;">用餐方式：
             <button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button><button class="btn type-btn" onclick="setT('內用',this)">內用</button>
             <div id="ts" style="display:none;margin-top:8px">桌號：{% for n in range(1,6) %}<button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>{% endfor %}</div>
         </div>
@@ -253,8 +256,7 @@ INDEX_HTML = """
                 <div class="grid">
                     {% if item.can_add %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
                     {% if item.add_meat %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
-                    {% if item.is_toast %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>{% endif %}
-                    {% if item.is_jam %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>{% endif %}
+                    {% if item.is_toast or item.is_jam %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:red">🌶️特製辣</div>{% endif %}
                     {% if item.opts %}{% for group in item.opts %}{% set gidx=loop.index %}{% for o in group %}
                         <div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>
@@ -267,45 +269,35 @@ INDEX_HTML = """
 </body></html>
 """
 
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}</style>
-<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
-<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
-{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
-<hr><h4>總計: ${{total}}</h4>
-<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button></form>
-<br><a href="/" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
-"""
-
-SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<style>body{font-family:sans-serif;text-align:center;padding-top:100px;background:#fdfaf0;}</style>
-<script>setTimeout(()=>location.href='/', 5000)</script></head>
-<body><h1 style="color:#27ae60;">✅ 訂單已送出</h1><p>請至櫃台結帳</p><br><a href="/">返回點餐首頁</a></body></html>
-"""
-
 BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8">
-<meta http-equiv="refresh" content="10"> <style>
-    body{font-family:sans-serif;background:#f4f4f4;padding:15px;}
+<meta http-equiv="refresh" content="15"> 
+<style>
+    body{font-family:sans-serif;background:#f4f4f4;padding:15px;margin-bottom:80px;}
     .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}
     .btn-print{background:#333;color:#fff;padding:12px 25px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;}
     .btn-done{background:#27ae60;color:#fff;padding:12px 25px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;margin-left:10px;}
+    .boss-nav { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
+    .btn-order { background: #ffbe00; color: #000; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; }
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
     function del(id,e){ 
-        if(confirm('確認出餐完成並存檔到 Google 試算表？')){
+        if(confirm('確認出餐完成並存檔？')){
             fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
             .then(()=>e.closest('.o').remove())
         } 
     }
 </script></head>
 <body>
-    <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:10px;border-radius:10px;margin-bottom:20px;">
-        <h2 style="margin:0;">💰 今日累積營收：${{total}}</h2>
-        <button onclick="location.reload()" style="padding:10px;">🔄 立即刷新訂單</button>
+    <div class="boss-nav">
+        <h3 style="margin:0;">💰 營收：${{total}}</h3>
+        <div>
+            <a href="/?mode=boss" class="btn-order">➕ 幫客點餐</a>
+            <button onclick="location.reload()" style="margin-left:5px;">🔄 刷新</button>
+        </div>
     </div>
+    <div style="margin-top: 60px;">
     {% for h in logs %}
     <div class="o">
         <span style="float:right;color:#888;">{{h.time.strftime('%H:%M:%S')}}</span>
@@ -322,7 +314,26 @@ BOSS_HTML = """
         </div>
     </div>
     {% endfor %}
+    </div>
 </body></html>
+"""
+
+# 其他模板 (CART, SUCCESS, PRINT) 保持與之前相同
+CART_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}</style>
+<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
+<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
+{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
+<hr><h4>總計: ${{total}}</h4>
+<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button></form>
+<br><a href="/" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
+"""
+
+SUCCESS_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>body{font-family:sans-serif;text-align:center;padding-top:100px;background:#fdfaf0;}</style>
+<script>setTimeout(()=>location.href='/', 3000)</script></head>
+<body><h1 style="color:#27ae60;">✅ 訂單已送出</h1><p>請等候櫃台叫號或送餐</p><br><a href="/">返回點餐首頁</a></body></html>
 """
 
 PRINT_HTML = """
@@ -332,6 +343,5 @@ PRINT_HTML = """
 """
 
 if __name__ == "__main__":
-    # Render 等平台會自動設定 PORT 環境變數
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
