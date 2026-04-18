@@ -4,8 +4,8 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-# 固定密鑰，避免伺服器重啟導致客人購物車被清空
-app.secret_key = "morning_noodle_fixed_key_999"
+# 固定密鑰，防止伺服器重啟導致購物車清空
+app.secret_key = "morning_noodle_fixed_final_key_888"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -31,7 +31,7 @@ def sync_to_google(summary, price, info):
         pass
 
 # ==========================================
-# 🍱 [菜單資料 - 已更新加里肌與酥一點選項]
+# 🍱 [完整菜單資料]
 # ==========================================
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 
@@ -81,14 +81,21 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25, "is_jam": True}, {"name": "奶酥厚片", "price": 30, "is_jam": True}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "is_toast": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"},
-        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True, "is_toast": True, "sub": "✅含生菜、番茄"}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "is_toast": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
-        {"name": "薯餅", "price": 25}, {"name": "小肉豆", "price": 40}
+        {"name": "熱狗(3支)", "price": 20}, {"name": "蔥蛋", "price": 25},
+        {"name": "薯餅", "price": 25}, {"name": "麥克雞塊", "price": 45},
+        {"name": "小肉豆", "price": 40}, {"name": "美式脆條", "price": 45},
+        {"name": "雞柳條", "price": 50}, {"name": "黃金蝦排", "price": 35}
     ],
     "飲品 (L)": [
         {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, 
@@ -103,6 +110,8 @@ total_income = 0
 def ensure_session():
     if 'cart' not in session: session['cart'] = []
     if 'info' not in session: session['info'] = {"type": "外帶", "table": ""}
+
+# --- [ 路由與 HTML 邏輯 ] ---
 
 @app.route("/")
 def index():
@@ -263,7 +272,7 @@ CART_HTML = """
 <body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
 {% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
 <hr><h4>總計: ${{total}}</h4>
-<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出</button></form>
+<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button></form>
 <br><a href="/" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
 """
 
@@ -271,7 +280,7 @@ SUCCESS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>body{font-family:sans-serif;text-align:center;padding-top:100px;background:#fdfaf0;}</style>
 <script>setTimeout(()=>location.href='/', 5000)</script></head>
-<body><h1 style="color:#27ae60;">✅ 訂單已送出</h1><p>請等候櫃台叫號或送餐</p><br><a href="/">返回首頁</a></body></html>
+<body><h1 style="color:#27ae60;">✅ 訂單已送出</h1><p>請等候櫃台叫號或送餐</p><br><a href="/">返回點餐首頁</a></body></html>
 """
 
 BOSS_HTML = """
@@ -279,11 +288,11 @@ BOSS_HTML = """
 <style>body{font-family:sans-serif;background:#f4f4f4;padding:15px;}.o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}</style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=300,height=400'); }
-    function del(id,e){ if(confirm('完成此單？資料將寫入 Google')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>e.closest('.o').remove())} }
+    function del(id,e){ if(confirm('確認完成並存檔到 Google 試算表？')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>e.closest('.o').remove())} }
 </script></head>
-<body><div style="display:flex;justify-content:space-between;"><h3>💰 今日累積：${{total}}</h3><button onclick="location.reload()">🔄 刷新</button></div><hr>
+<body><div style="display:flex;justify-content:space-between;"><h3>💰 今日累積：${{total}}</h3><button onclick="location.reload()">🔄 刷新訂單</button></div><hr>
 {% for h in logs %}<div class="o"><span style="float:right;color:gray;">{{h.time.strftime('%H:%M')}}</span><b>{{h.loc}}</b><p style="background:#fffbe6;padding:10px;border-radius:8px;">{{h.summary|safe}}</p><b>${{h.price}}</b>
-<div style="float:right;"><button onclick="prt('{{h.id}}')" style="padding:5px 15px;">🖨️ 列印</button> <button onclick="del('{{h.id}}',this)" style="color:green;padding:5px 15px;">✔️ 完成</button></div><div style="clear:both"></div></div>{% endfor %}
+<div style="float:right;"><button onclick="prt('{{h.id}}')" style="padding:5px 15px;">🖨️ 列印</button> <button onclick="del('{{h.id}}',this)" style="color:green;padding:5px 15px;font-weight:bold;">✔️ 完成存檔</button></div><div style="clear:both"></div></div>{% endfor %}
 </body></html>
 """
 
