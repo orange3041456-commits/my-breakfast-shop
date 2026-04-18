@@ -18,7 +18,6 @@ G_ENTRY_PRICE = "entry.157627510"
 G_ENTRY_TIME = "entry.1541194223"     
 
 def sync_to_google(summary, price, info):
-    """將訂單正式寫入 Google Sheets (由後台『完成』按鈕觸發)"""
     clean_summary = summary.replace('<br>', ' | ')
     payload = {
         G_ENTRY_SUMMARY: clean_summary,
@@ -294,9 +293,61 @@ CART_HTML = """
 <br><a href="/" style="color:gray;text-decoration:none;display:block;text-align:center;">← 返回繼續加點</a></div></body></html>
 """
 
+# --- 💡 重點優化：出單機專用列印模板 ---
 PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;text-align:center;padding-top:50px;}.t{display:none}@media print{body *{visibility:hidden}.t,.t *{visibility:visible}.t{display:block;position:fixed;left:0;top:0;width:100%;font-size:18px;padding:20px}}</style><script>window.onload=function(){window.print();setTimeout(function(){location.href='/'},2000)}</script></head>
-<body><h2>✅ 訂單已送出</h2><div class="t"><span style="float:right;">{{order.time.strftime('%H:%M')}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+    body { font-family: 'Courier New', Courier, monospace; text-align: center; margin: 0; padding: 0; background: white; }
+    h2 { font-size: 16px; margin: 10px 0; }
+    /* 列印專用樣式 */
+    .ticket { 
+        width: 280px; /* 適合 58mm/80mm 出單機 */
+        margin: 0 auto;
+        padding: 5px;
+        text-align: left;
+    }
+    .header { font-size: 24px; font-weight: bold; border-bottom: 2px dashed #000; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+    .item-list { font-size: 18px; line-height: 1.5; margin-bottom: 10px; min-height: 100px; }
+    .total { border-top: 2px dashed #000; padding-top: 5px; font-size: 20px; font-weight: bold; text-align: right; }
+    .footer-msg { text-align: center; font-size: 12px; margin-top: 20px; padding-bottom: 50px; } /* 底部留白方便撕紙 */
+
+    /* 螢幕上顯示提示，列印時隱藏提示 */
+    .screen-tip { padding: 50px; color: green; font-weight: bold; font-family: sans-serif; }
+    
+    @media print {
+        .screen-tip { display: none; }
+        @page { margin: 0; }
+        body { margin: 0; }
+    }
+</style>
+<script>
+    window.onload = function() {
+        window.print();
+        setTimeout(function() {
+            document.body.innerHTML = "<h3>列印完成，正在返回...</h3>";
+            location.href = '/';
+        }, 1000);
+    }
+</script>
+</head>
+<body>
+    <div class="screen-tip">✅ 訂單已送出，正在列印收據...</div>
+    <div class="ticket">
+        <div class="header">
+            <span>{{order.loc}}</span>
+            <span style="font-size:14px;">{{order.time.strftime('%H:%M')}}</span>
+        </div>
+        <div class="item-list">
+            {{order.summary|safe}}
+        </div>
+        <div class="total">
+            總額：${{order.price}}
+        </div>
+        <div class="footer-msg">
+            --- 謝謝惠顧 ---
+        </div>
+    </div>
+</body></html>
 """
 
 BOSS_HTML = """
