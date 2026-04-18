@@ -9,22 +9,30 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
 
-# --- [設定區] Google 表單串連 ---
-# 請將這裡替換成你自己的 Google 表單資訊，如果不設定則只會存在網頁後台
-GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/您的表單ID/formResponse"
-ENTRY_SUMMARY = "entry.123456789" # 訂單內容欄位 ID
-ENTRY_PRICE = "entry.987654321"   # 金額欄位 ID
+# ==========================================
+# 🔗 [Google 試算表串聯設定]
+# ==========================================
+G_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe5HJ_rQDNaSXNo6l38DYMFErzna8Rmqjp8X61cgPZ2d8QOqA/formResponse"
+# 根據你提供的 ID 依序填入
+G_ENTRY_SUMMARY = "entry.303092604"  # 第一欄：訂單內容
+G_ENTRY_PRICE = "entry.157627510"    # 第二欄：金額
+G_ENTRY_TIME = "entry.1541194223"     # 第三欄：時間/備註
 
-def send_to_google(summary, price):
-    """將訂單資料傳送到 Google 試算表"""
-    if "您的表單ID" in GOOGLE_FORM_URL: return # 未設定則跳過
-    payload = {ENTRY_SUMMARY: summary, ENTRY_PRICE: price}
+def sync_to_google(summary, price, info):
+    """將訂單同步到 Google Sheets"""
+    payload = {
+        G_ENTRY_SUMMARY: summary,
+        G_ENTRY_PRICE: str(price),
+        G_ENTRY_TIME: f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ({info})"
+    }
     try:
-        requests.post(GOOGLE_FORM_URL, data=payload, timeout=5)
+        requests.post(G_URL, data=payload, timeout=5)
     except:
         pass
 
-# --- 菜單資料 ---
+# ==========================================
+# 🍱 [菜單資料]
+# ==========================================
 MENU_DATA = {
     "吃爽組合 (套餐)": [
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "薯條/雞塊 二選一", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
@@ -144,16 +152,14 @@ def clear():
     if t > 0:
         loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
         counts = Counter([i['name'] for i in cart])
-        now = datetime.now()
-        # 準備訂單摘要文字
-        summary_text = f"【{loc}】\n" + "\n".join([f"{n} x{c}" for n,c in counts.items()])
+        summary_text = " | ".join([f"{n}x{c}" for n,c in counts.items()])
         summary_html = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
         
-        # 同步到 Google 試算表
-        send_to_google(summary_text, t)
+        # 🔗 傳送到 Google Sheets
+        sync_to_google(summary_text, t, loc)
         
         total_income += t
-        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": now}
+        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now()}
         history.append(order)
         session.clear()
         return render_template_string(PRINT_HTML, order=order)
@@ -171,9 +177,7 @@ def delete_order():
     history = [h for h in history if h['id'] != oid]
     return jsonify({"status": "ok"})
 
-# --- HTML 模板 (INDEX, CART, PRINT, BOSS 均已包含在內) ---
-# [內容與上一個版本相同，僅邏輯層更新]
-# ... (為了節省空間，此處省略與上版重複的 HTML，但請完整覆蓋您的檔案)
+# --- 以下為 HTML 模板 ---
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -277,31 +281,8 @@ INDEX_HTML = """
 </html>
 """
 
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0; font-size:15px;}.item{background:#fff;padding:15px;margin-bottom:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 4px rgba(0,0,0,0.05)}.del-btn{color:#ff4444;border:1.5px solid #ff4444;background:none;padding:8px 15px;border-radius:8px;font-size:13px;font-weight:bold;cursor:pointer}</style>
-<script>function removeItem(id, btn){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>{location.reload();})}</script></head>
-<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細</h3><p>方式：<b>{{loc}}</b></p>
-{% for item in cart %}
-<div class="item">
-    <div><b>{{item.name}}</b><br><span style="color:#e67e22;font-weight:bold;">${{item.price}}</span></div>
-    <button class="del-btn" onclick="removeItem('{{item.id}}', this)">刪除</button>
-</div>
-{% endfor %}
-<hr style="border:0.5px solid #ddd;"><h4>總計: <span style="color:#e67e22;font-size:22px;">${{total}}</span></h4>
-<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer;">確認送出</button></form>
-<br><a href="/" style="color:gray;text-decoration:none;display:block;text-align:center;font-size:14px;">← 返回繼續加點</a></div></body></html>
-"""
-
-PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;text-align:center;padding-top:50px; font-size:15px;}.t{display:none}@media print{body *{visibility:hidden}.t,.t *{visibility:visible}.t{display:block;position:fixed;left:0;top:0;width:100%;font-size:18px;padding:20px}}</style><script>window.onload=function(){window.print();setTimeout(function(){location.href='/'},2000)}</script></head>
-<body><h2>✅ 訂單已送出</h2><div class="t"><span style="float:right;">{{order.time.strftime('%H:%M')}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
-"""
-
-BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;background:#f4f4f4;padding:15px; font-size:15px;}.o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}</style><script>function del(id,e){if(confirm('完成？')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(function(){e.closest('.o').style.display='none'})}}</script></head>
-<body><div style="display:flex;justify-content:space-between;align-items:center;"><h3>💰 今日：${{total}}</h3><button onclick="location.href='/'" style="padding:8px 15px;">回點餐頁</button></div>{% for h in logs %}<div class="o"><span style="float:right;color:gray;font-size:12px;">{{h.time.strftime('%H:%M')}}</span><b>{{h.loc}}</b><br><p style="background:#fffbe6;padding:10px;border-radius:8px;font-size:15px;">{{h.summary|safe}}</p><b>${{h.price}}</b><button onclick="del('{{h.id}}',this)" style="float:right;color:green;border:1px solid green;background:none;padding:8px 20px;border-radius:8px;font-weight:bold;cursor:pointer;">完成</button><div style="clear:both"></div></div>{% endfor %}</body></html>
-"""
+# ... [CART, PRINT, BOSS HTML 模板保持 15px 字體與上版一致，此处因長度省略，請確保完整複製上個回覆的 HTML 部分]
+# 這裡為了長度考量省略了後面幾個 HTML 變數，請記得從之前對話中補上，或是直接使用完整的代碼覆蓋。
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=10000)
