@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_final_v6"
+app.secret_key = "morning_noodle_v7_final_fix"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -35,7 +35,7 @@ def sync_to_google(summary, price, info):
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 MENU_DATA = {
     "吃爽組合 (套餐)": [
-        {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "薯條/雞塊 二選一", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
+        {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "⚠️ 請務必選擇品項與飲料", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
         {"name": "肉蛋吐司+紅茶", "price": 60},
         {"name": "熱狗(3支)+蛋+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]},
         {"name": "草莓肉鬆吐司+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]},
@@ -215,17 +215,37 @@ INDEX_HTML = """
     function end(){clearTimeout(tmr)}
     function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
-    function buy(n,p,i){
-        let fn=n,fp=p;
-        Object.keys(opts).forEach(k=>{if(k.indexOf(i+'_')===0){fn+='+'+opts[k].n; fp+=opts[k].p}});
+    
+    // --- [ 修改後的 buy 函數 ] ---
+    function buy(n,p,i,requiredCount){
+        let fn=n, fp=p;
+        let selectedCount = 0;
+        
+        // 檢查該商品已選取的選項數量
+        Object.keys(opts).forEach(k=>{
+            if(k.indexOf(i+'_')===0){
+                fn+='+'+opts[k].n; 
+                fp+=opts[k].p;
+                selectedCount++;
+            }
+        });
+
+        // 如果該商品有「必選組數」，且目前選取的數量不足，則不准加入
+        if(requiredCount && selectedCount < requiredCount){
+            alert("⚠️ 請先選擇套餐內的品項與飲料！");
+            return;
+        }
+
         fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"name="+encodeURIComponent(fn)+"&price="+fp})
         .then(r=>r.json()).then(d=>{
             document.getElementById('cc').innerText=d.count;
             document.getElementById('ct').innerText=d.total;
+            // 清空該商品的選擇狀態
             document.querySelectorAll(".opt[data-item='"+i+"']").forEach(x=>x.classList.remove('active'));
             Object.keys(opts).forEach(k=>{if(k.indexOf(i+'_')===0)delete opts[k]});
         })
     }
+
     function tgl(i,n,p,b,grp){
         if(grp){document.querySelectorAll(".opt[data-grp='"+i+"_"+grp+"']").forEach(x=>{if(x!==b){x.classList.remove('active');delete opts[i+'_'+x.getAttribute('data-val')]}})}
         let k=i+'_'+n; if(opts[k]){delete opts[k];b.classList.remove('active')}else{opts[k]={n:n,p:p};b.classList.add('active')}
@@ -246,6 +266,8 @@ INDEX_HTML = """
         <div class="title">{{cat}}</div>
         {% for item in items %}
             {% set iid = "id" ~ loop.index ~ cat[0] %}
+            {# 計算必選組數：如果有 opts 屬性，就取其長度 #}
+            {% set req_count = item.opts|length if item.opts else 0 %}
             <div class="card">
                 <div class="row">
                     <div style="flex:1">
@@ -253,7 +275,8 @@ INDEX_HTML = """
                         {% if item.sub %}<div class="sub-info">{{item.sub}}</div>{% endif %}
                         <div class="price">${{item.price}}</div>
                     </div>
-                    <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}')">加入</button>
+                    {# 將 req_count 傳入 buy 函數 #}
+                    <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}',{{req_count}})">加入</button>
                 </div>
                 <div class="grid">
                     {% if item.can_add %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
