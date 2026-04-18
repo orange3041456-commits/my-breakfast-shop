@@ -4,10 +4,11 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-# 固定密鑰，防止伺服器重啟導致購物車清空
-app.secret_key = "morning_noodle_fixed_final_key_888"
+# 固定密鑰，確保伺服器重啟或網路波動時，客人的購物車不會被清空
+app.secret_key = "morning_noodle_pro_v1_fixed"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
+# 老闆後台登入密碼
 BOSS_PASSWORD = "8888" 
 
 # ==========================================
@@ -284,15 +285,43 @@ SUCCESS_HTML = """
 """
 
 BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="30">
-<style>body{font-family:sans-serif;background:#f4f4f4;padding:15px;}.o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}</style>
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta http-equiv="refresh" content="10"> <style>
+    body{font-family:sans-serif;background:#f4f4f4;padding:15px;}
+    .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}
+    .btn-print{background:#333;color:#fff;padding:12px 25px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;}
+    .btn-done{background:#27ae60;color:#fff;padding:12px 25px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;margin-left:10px;}
+</style>
 <script>
-    function prt(id){ window.open('/print_order/'+id, '_blank', 'width=300,height=400'); }
-    function del(id,e){ if(confirm('確認完成並存檔到 Google 試算表？')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>e.closest('.o').remove())} }
+    function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
+    function del(id,e){ 
+        if(confirm('確認出餐完成並存檔到 Google 試算表？')){
+            fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
+            .then(()=>e.closest('.o').remove())
+        } 
+    }
 </script></head>
-<body><div style="display:flex;justify-content:space-between;"><h3>💰 今日累積：${{total}}</h3><button onclick="location.reload()">🔄 刷新訂單</button></div><hr>
-{% for h in logs %}<div class="o"><span style="float:right;color:gray;">{{h.time.strftime('%H:%M')}}</span><b>{{h.loc}}</b><p style="background:#fffbe6;padding:10px;border-radius:8px;">{{h.summary|safe}}</p><b>${{h.price}}</b>
-<div style="float:right;"><button onclick="prt('{{h.id}}')" style="padding:5px 15px;">🖨️ 列印</button> <button onclick="del('{{h.id}}',this)" style="color:green;padding:5px 15px;font-weight:bold;">✔️ 完成存檔</button></div><div style="clear:both"></div></div>{% endfor %}
+<body>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:10px;border-radius:10px;margin-bottom:20px;">
+        <h2 style="margin:0;">💰 今日累積營收：${{total}}</h2>
+        <button onclick="location.reload()" style="padding:10px;">🔄 立即刷新訂單</button>
+    </div>
+    {% for h in logs %}
+    <div class="o">
+        <span style="float:right;color:#888;">{{h.time.strftime('%H:%M:%S')}}</span>
+        <strong style="font-size:22px;">{{h.loc}}</strong>
+        <p style="background:#fffbe6;padding:15px;border-radius:8px;font-size:19px;line-height:1.5;margin:10px 0;border:1px solid #ffe58f;">
+            {{h.summary|safe}}
+        </p>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <b style="font-size:24px;color:#e67e22;">金額：${{h.price}}</b>
+            <div>
+                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️ 印單</button>
+                <button class="btn-done" onclick="del('{{h.id}}',this)">✔️ 完成</button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </body></html>
 """
 
@@ -303,5 +332,6 @@ PRINT_HTML = """
 """
 
 if __name__ == "__main__":
+    # Render 等平台會自動設定 PORT 環境變數
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
