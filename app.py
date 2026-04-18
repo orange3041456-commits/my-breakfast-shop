@@ -110,6 +110,8 @@ def ensure_session():
     if 'cart' not in session: session['cart'] = []
     if 'info' not in session: session['info'] = {"type": "外帶", "table": ""}
 
+# --- [路由分流] ---
+
 @app.route("/")
 def index():
     cart = session.get('cart', [])
@@ -158,7 +160,7 @@ def clear():
         order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now()}
         history.append(order)
         session.clear()
-        return render_template_string(PRINT_HTML, order=order)
+        return render_template_string(SUCCESS_HTML) # 客人點完顯示感謝頁
     return redirect("/")
 
 @app.route("/boss")
@@ -166,11 +168,24 @@ def boss():
     if request.args.get("pw") != BOSS_PASSWORD: return "<h1>❌</h1>", 403
     return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1])
 
+@app.route("/print_order/<oid>")
+def print_order(oid):
+    target = next((h for h in history if h['id'] == oid), None)
+    if target:
+        return render_template_string(PRINT_HTML, order=target)
+    return "訂單不存在", 404
+
 @app.route("/delete_order", methods=["POST"])
 def delete_order():
     global history
     oid = request.form.get("id")
-    target = next((h for h in history if h['id'] == oid), None)
+    target = next((h for h in history if h['id'] != oid), None) # 此處保持邏輯
+    # 實際刪除邏輯在下方
+    target = None
+    for h in history:
+        if h['id'] == oid:
+            target = h
+            break
     if target:
         sync_to_google(target['summary'], target['price'], target['loc'])
         history = [h for h in history if h['id'] != oid]
@@ -200,7 +215,6 @@ INDEX_HTML = """
         .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; color: #444; }
         .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; font-weight: bold; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-        .sub-text { font-size: 12.5px; color: #888; display: block; margin-top: 4px; line-height: 1.2; }
     </style>
     <script>
         let opts={}; let curT="{{table_id if table_id else ''}}"; let tmr;
@@ -219,14 +233,10 @@ INDEX_HTML = """
             <div style="text-align:center;font-weight:bold;color:#5d4037;padding:10px;">內用桌號：{{table_id}}</div>
         {% else %}
             <div style="padding:10px;">
-                <span>用餐：</span>
-                <button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button>
+                用餐：<button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button>
                 <button class="btn type-btn" onclick="setT('內用',this)">內用</button>
                 <div id="ts" style="display:none;margin-top:8px">
-                    桌號：
-                    {% for n in range(1,6) %}
-                        <button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>
-                    {% endfor %}
+                    桌號：{% for n in range(1,6) %}<button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>{% endfor %}
                 </div>
             </div>
         {% endif %}
@@ -237,123 +247,87 @@ INDEX_HTML = """
             {% set iid = "id" ~ loop.index ~ cat[0] %}
             <div class="card">
                 <div class="row">
-                    <div style="flex:1">
-                        <strong style="font-size:16px;">{{item.name}}</strong>
-                        {% if item.sub %}<span class="sub-text">{{item.sub}}</span>{% endif %}
-                        <div class="price">${{item.price}}</div>
-                    </div>
+                    <div style="flex:1"><strong>{{item.name}}</strong><br><span class="price">${{item.price}}</span></div>
                     <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}')">加入</button>
                 </div>
                 <div class="grid">
-                    {% if item.can_add %}
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div>
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>
-                        {% if item.no_v %}
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','✘生菜',0,this)" style="color:#e67e22">✘生菜</div>
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','✘番茄',0,this)" style="color:#e67e22">✘番茄</div>
-                        {% endif %}
-                        {% if item.is_toast %}
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>
-                        {% endif %}
-                    {% endif %}
-                    {% if item.is_jam %}
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>
-                    {% endif %}
-                    {% if item.can_spicy %}
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:#d35400;">🌶️特製辣</div>
-                    {% endif %}
-                    {% if item.opts %}
-                        {% for group in item.opts %}
-                            {% set gidx=loop.index %}
-                            {% for o in group %}
-                                <div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>
-                            {% endfor %}
-                        {% endfor %}
-                    {% endif %}
+                    {% if item.can_add %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div>{% endif %}
+                    {% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:red;">🌶️辣</div>{% endif %}
+                    {% if item.opts %}{% for group in item.opts %}{% set gidx=loop.index %}{% for o in group %}<div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>{% endfor %}{% endfor %}{% endif %}
                 </div>
             </div>
         {% endfor %}
     {% endfor %}
     <div class="footer">
-        <span>已點 <span id="cc" style="color:#ffbe00;">{{cart_len}}</span> 項 | $<span id="ct" style="color:#ffbe00;">{{total}}</span></span>
-        <a href="/cart" style="background:#ffbe00;color:#000;padding:8px 20px;border-radius:20px;text-decoration:none;font-weight:bold;font-size:15px;">去結帳</a>
+        <span>已點 <span id="cc">{{cart_len}}</span> 項 | $<span id="ct">{{total}}</span></span>
+        <a href="/cart" style="background:#ffbe00;color:#000;padding:8px 20px;border-radius:20px;text-decoration:none;font-weight:bold;">去結帳</a>
     </div>
 </body>
 </html>
 """
 
 CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;font-size:15px;}.item{background:#fff;padding:15px;margin-bottom:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}.del-btn{color:#ff4444;border:1.5px solid #ff4444;background:none;padding:8px 15px;border-radius:8px;font-weight:bold;cursor:pointer;}</style>
-<script>function removeItem(id, btn){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>{location.reload();})}</script></head>
-<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細</h3><p>方式：<b>{{loc}}</b></p>
-{% for item in cart %}<div class="item"><div><b>{{item.name}}</b><br><span style="color:#e67e22;">${{item.price}}</span></div><button class="del-btn" onclick="removeItem('{{item.id}}', this)">刪除</button></div>{% endfor %}
-<hr><h4>總計: <span style="color:#e67e22;font-size:22px;">${{total}}</span></h4>
-<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer;">確認送出</button></form>
-<br><a href="/" style="color:gray;text-decoration:none;display:block;text-align:center;">← 返回繼續加點</a></div></body></html>
-"""
-
-# --- 💡 重點優化：出單機專用列印模板 ---
-PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-    body { font-family: 'Courier New', Courier, monospace; text-align: center; margin: 0; padding: 0; background: white; }
-    h2 { font-size: 16px; margin: 10px 0; }
-    /* 列印專用樣式 */
-    .ticket { 
-        width: 280px; /* 適合 58mm/80mm 出單機 */
-        margin: 0 auto;
-        padding: 5px;
-        text-align: left;
-    }
-    .header { font-size: 24px; font-weight: bold; border-bottom: 2px dashed #000; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; }
-    .item-list { font-size: 18px; line-height: 1.5; margin-bottom: 10px; min-height: 100px; }
-    .total { border-top: 2px dashed #000; padding-top: 5px; font-size: 20px; font-weight: bold; text-align: right; }
-    .footer-msg { text-align: center; font-size: 12px; margin-top: 20px; padding-bottom: 50px; } /* 底部留白方便撕紙 */
-
-    /* 螢幕上顯示提示，列印時隱藏提示 */
-    .screen-tip { padding: 50px; color: green; font-weight: bold; font-family: sans-serif; }
-    
-    @media print {
-        .screen-tip { display: none; }
-        @page { margin: 0; }
-        body { margin: 0; }
-    }
-</style>
-<script>
-    window.onload = function() {
-        window.print();
-        setTimeout(function() {
-            document.body.innerHTML = "<h3>列印完成，正在返回...</h3>";
-            location.href = '/';
-        }, 1000);
-    }
-</script>
-</head>
-<body>
-    <div class="screen-tip">✅ 訂單已送出，正在列印收據...</div>
-    <div class="ticket">
-        <div class="header">
-            <span>{{order.loc}}</span>
-            <span style="font-size:14px;">{{order.time.strftime('%H:%M')}}</span>
-        </div>
-        <div class="item-list">
-            {{order.summary|safe}}
-        </div>
-        <div class="total">
-            總額：${{order.price}}
-        </div>
-        <div class="footer-msg">
-            --- 謝謝惠顧 ---
-        </div>
-    </div>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:12px;border-radius:10px;display:flex;justify-content:space-between;}</style></head>
+<body><h3>🛒 結帳明細 ({{loc}})</h3>
+{% for item in cart %}<div class="item"><div><b>{{item.name}}</b><br>${{item.price}}</div><button onclick="fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id={{item.id}}'}).then(()=>location.reload())">刪除</button></div>{% endfor %}
+<hr><h4>總計: ${{total}}</h4>
+<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;font-size:16px;">送出訂單</button></form>
 </body></html>
 """
 
+SUCCESS_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;text-align:center;padding:100px 20px;background:#fdfaf0;}</style>
+<script>setTimeout(function(){location.href='/'}, 5000);</script></head>
+<body><h1 style="color:#2ecc71;">✅ 訂單已送出</h1><p>請至櫃台確認，謝謝您！</p><br><a href="/" style="color:#ffbe00;">返回選單</a></body></html>
+"""
+
 BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;background:#f4f4f4;padding:15px;font-size:15px;}.o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}</style><script>function del(id,e){if(confirm('確認完成？資料將寫入 Google')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(function(){e.closest('.o').style.display='none'})}}</script></head>
-<body><div style="display:flex;justify-content:space-between;align-items:center;"><h3>💰 今日：${{total}}</h3><button onclick="location.href='/'">回首頁</button></div>
-{% for h in logs %}<div class="o"><span style="float:right;color:gray;">{{h.time.strftime('%H:%M')}}</span><b>{{h.loc}}</b><br><p style="background:#fffbe6;padding:10px;border-radius:8px;">{{h.summary|safe}}</p><b>${{h.price}}</b><button onclick="del('{{h.id}}',this)" style="float:right;color:green;border:1px solid green;background:none;padding:8px 20px;border-radius:8px;font-weight:bold;cursor:pointer;">完成</button><div style="clear:both"></div></div>{% endfor %}</body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+    body{font-family:sans-serif;background:#f4f4f4;padding:10px;}
+    .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;border-left:8px solid #ffbe00;}
+    .btn-p{background:#2980b9;color:white;padding:10px 15px;border-radius:5px;border:none;font-weight:bold;}
+    .btn-d{background:#27ae60;color:white;padding:10px 15px;border-radius:5px;border:none;font-weight:bold;}
+</style>
+<script>
+    function doPrint(id){ window.open('/print_order/'+id, '_blank', 'width=350,height=600'); }
+    function del(id,e){if(confirm('確認結帳完成並同步到Google？')){fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>e.closest('.o').style.display='none')}}
+</script></head>
+<body>
+    <div style="display:flex;justify-content:space-between;padding-bottom:10px;">
+        <h3>💰 今日累計: ${{total}}</h3>
+        <button onclick="location.href='/'">櫃台點餐</button>
+        <button onclick="location.reload()">整理訂單</button>
+    </div>
+    {% for h in logs %}
+    <div class="o">
+        <span style="float:right;">{{h.time.strftime('%H:%M')}}</span>
+        <strong>{{h.loc}}</strong><br>
+        <p style="background:#eee;padding:10px;border-radius:5px;">{{h.summary|safe}}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <b>${{h.price}}</b>
+            <div>
+                <button class="btn-p" onclick="doPrint('{{h.id}}')">列印收據</button>
+                <button class="btn-d" onclick="del('{{h.id}}',this)">完成/刪除</button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</body></html>
+"""
+
+PRINT_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    body{font-family:sans-serif;width:280px;padding:10px;}
+    .h{font-size:24px;font-weight:bold;border-bottom:2px dashed #000;padding-bottom:5px;}
+    .items{font-size:20px;line-height:1.5;margin:10px 0;}
+</style><script>window.onload=function(){window.print();setTimeout(()=>window.close(),500)}</script></head>
+<body>
+    <div class="h">{{order.loc}} <span style="font-size:14px;float:right;">{{order.time.strftime('%H:%M')}}</span></div>
+    <div class="items">{{order.summary|safe}}</div>
+    <hr>
+    <div style="font-size:22px;font-weight:bold;text-align:right;">總計：${{order.price}}</div>
+</body></html>
 """
 
 if __name__ == "__main__":
