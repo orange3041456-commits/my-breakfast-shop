@@ -56,14 +56,14 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25, "is_jam": True}, {"name": "奶酥厚片", "price": 30, "is_jam": True}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "is_toast": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "薯餅吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True, "is_toast": True}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True, "is_toast": True}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
+        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
@@ -228,7 +228,7 @@ INDEX_HTML = """
                             <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>
                         {% endif %}
                         {% if item.can_spicy %}
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','辣',0,this)" style="color:#d35400;">🌶️加辣</div>
+                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:#d35400;">🌶️特製辣</div>
                         {% endif %}
                     {% endif %}
                     {% if item.is_jam %}
