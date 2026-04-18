@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_pro_v2_boss_mode"
+app.secret_key = "morning_noodle_pro_v3_boss_flow"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -33,7 +33,6 @@ def sync_to_google(summary, price, info):
 # 🍱 [完整菜單資料]
 # ==========================================
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
-
 MENU_DATA = {
     "吃爽組合 (套餐)": [
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "薯條/雞塊 二選一", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
@@ -141,15 +140,17 @@ def del_item():
 def view_cart():
     cart = session.get('cart', [])
     info = session.get('info', {"type": "外帶", "table": ""})
+    is_boss = request.args.get('mode') == 'boss'
     t = sum(i['price'] for i in cart)
     loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
-    return render_template_string(CART_HTML, cart=cart, total=t, loc=loc)
+    return render_template_string(CART_HTML, cart=cart, total=t, loc=loc, is_boss=is_boss)
 
 @app.route("/clear", methods=["POST"])
 def clear():
     global total_income
     cart = session.get('cart', [])
     info = session.get('info', {"type": "外帶", "table": ""})
+    is_boss = request.form.get('is_boss') == 'True'
     t = sum(i['price'] for i in cart)
     if t > 0:
         loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
@@ -159,6 +160,9 @@ def clear():
         order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now()}
         history.append(order)
         session['cart'] = [] 
+        # 如果是老闆模式，不進成功頁面，直接返回後台
+        if is_boss:
+            return redirect(url_for('boss', pw=BOSS_PASSWORD))
         return render_template_string(SUCCESS_HTML)
     return redirect("/")
 
@@ -177,8 +181,6 @@ def print_order(oid):
 def delete_order():
     global history
     oid = request.form.get("id")
-    target = next((h for h in history if h['id'] != oid), None)
-    # 這裡邏輯修正：找到要刪除的那筆來同步
     sync_target = next((h for h in history if h['id'] == oid), None)
     if sync_target:
         sync_to_google(sync_target['summary'], sync_target['price'], sync_target['loc'])
@@ -206,7 +208,6 @@ INDEX_HTML = """
     .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; }
     .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-    .sub-text { font-size: 12px; color: #888; display: block; }
 </style>
 <script>
     let opts={}; let curT="{{table_id if table_id else ''}}"; let tmr;
@@ -236,13 +237,10 @@ INDEX_HTML = """
         🍜 晨食麵所
     </div>
     <div class="setup">
-        {% if table_id %}<div style="text-align:center;font-weight:bold;color:#5d4037;">內用桌號：{{table_id}}</div>
-        {% else %}
         <div style="padding:5px;">用餐方式：
             <button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button><button class="btn type-btn" onclick="setT('內用',this)">內用</button>
             <div id="ts" style="display:none;margin-top:8px">桌號：{% for n in range(1,6) %}<button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>{% endfor %}</div>
         </div>
-        {% endif %}
     </div>
     {% for cat,items in menu.items() %}
         <div class="title">{{cat}}</div>
@@ -250,7 +248,7 @@ INDEX_HTML = """
             {% set iid = "id" ~ loop.index ~ cat[0] %}
             <div class="card">
                 <div class="row">
-                    <div style="flex:1"><strong>{{item.name}}</strong>{% if item.sub %}<span class="sub-text">{{item.sub}}</span>{% endif %}<div class="price">${{item.price}}</div></div>
+                    <div style="flex:1"><strong>{{item.name}}</strong><div class="price">${{item.price}}</div></div>
                     <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}')">加入</button>
                 </div>
                 <div class="grid">
@@ -265,25 +263,39 @@ INDEX_HTML = """
             </div>
         {% endfor %}
     {% endfor %}
-    <div class="footer"><span>已點 <span id="cc" style="color:#ffbe00;">{{cart_len}}</span> 項 | $<span id="ct" style="color:#ffbe00;">{{total}}</span></span><a href="/cart" style="background:#ffbe00;color:#000;padding:8px 20px;border-radius:20px;text-decoration:none;font-weight:bold;">去結帳</a></div>
+    <div class="footer">
+        <span>已點 <span id="cc">{{cart_len}}</span> 項 | $<span id="ct">{{total}}</span></span>
+        <a href="/cart{% if is_boss %}?mode=boss{% endif %}" style="background:#ffbe00;color:#000;padding:8px 20px;border-radius:20px;text-decoration:none;font-weight:bold;">去結帳</a>
+    </div>
 </body></html>
 """
 
+CART_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}</style>
+<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
+<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
+{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
+<hr><h4>總計: ${{total}}</h4>
+<form action="/clear" method="POST">
+    <input type="hidden" name="is_boss" value="{{is_boss}}">
+    <button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button>
+</form>
+<br><a href="/{% if is_boss %}?mode=boss{% endif %}" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
+"""
+
 BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8">
-<meta http-equiv="refresh" content="15"> 
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="15">
 <style>
     body{font-family:sans-serif;background:#f4f4f4;padding:15px;margin-bottom:80px;}
     .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}
     .btn-print{background:#333;color:#fff;padding:12px 25px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;}
     .btn-done{background:#27ae60;color:#fff;padding:12px 25px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;margin-left:10px;}
     .boss-nav { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
-    .btn-order { background: #ffbe00; color: #000; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; }
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
     function del(id,e){ 
-        if(confirm('確認出餐完成並存檔？')){
+        if(confirm('確認完成並存檔？')){
             fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
             .then(()=>e.closest('.o').remove())
         } 
@@ -292,25 +304,17 @@ BOSS_HTML = """
 <body>
     <div class="boss-nav">
         <h3 style="margin:0;">💰 營收：${{total}}</h3>
-        <div>
-            <a href="/?mode=boss" class="btn-order">➕ 幫客點餐</a>
-            <button onclick="location.reload()" style="margin-left:5px;">🔄 刷新</button>
-        </div>
+        <a href="/?mode=boss" style="background:#ffbe00;color:#000;padding:8px 15px;border-radius:5px;text-decoration:none;font-weight:bold;">➕ 幫客點餐</a>
     </div>
     <div style="margin-top: 60px;">
     {% for h in logs %}
     <div class="o">
         <span style="float:right;color:#888;">{{h.time.strftime('%H:%M:%S')}}</span>
         <strong style="font-size:22px;">{{h.loc}}</strong>
-        <p style="background:#fffbe6;padding:15px;border-radius:8px;font-size:19px;line-height:1.5;margin:10px 0;border:1px solid #ffe58f;">
-            {{h.summary|safe}}
-        </p>
+        <p style="background:#fffbe6;padding:15px;border-radius:8px;font-size:19px;line-height:1.5;">{{h.summary|safe}}</p>
         <div style="display:flex;justify-content:space-between;align-items:center;">
-            <b style="font-size:24px;color:#e67e22;">金額：${{h.price}}</b>
-            <div>
-                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️ 印單</button>
-                <button class="btn-done" onclick="del('{{h.id}}',this)">✔️ 完成</button>
-            </div>
+            <b style="font-size:24px;">金額：${{h.price}}</b>
+            <div><button class="btn-print" onclick="prt('{{h.id}}')">🖨️ 印單</button><button class="btn-done" onclick="del('{{h.id}}',this)">✔️ 完成</button></div>
         </div>
     </div>
     {% endfor %}
@@ -318,22 +322,12 @@ BOSS_HTML = """
 </body></html>
 """
 
-# 其他模板 (CART, SUCCESS, PRINT) 保持與之前相同
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}</style>
-<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
-<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
-{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
-<hr><h4>總計: ${{total}}</h4>
-<form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button></form>
-<br><a href="/" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
-"""
-
+# 其他模版保持不變
 SUCCESS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>body{font-family:sans-serif;text-align:center;padding-top:100px;background:#fdfaf0;}</style>
 <script>setTimeout(()=>location.href='/', 3000)</script></head>
-<body><h1 style="color:#27ae60;">✅ 訂單已送出</h1><p>請等候櫃台叫號或送餐</p><br><a href="/">返回點餐首頁</a></body></html>
+<body><h1 style="color:#27ae60;">✅ 訂單已送出</h1><p>請等候叫號</p></body></html>
 """
 
 PRINT_HTML = """
