@@ -1,5 +1,5 @@
 from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
-import os, secrets
+import os, secrets, requests
 from collections import Counter
 from datetime import datetime
 
@@ -8,6 +8,21 @@ app.secret_key = secrets.token_hex(16)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
+
+# --- [設定區] Google 表單串連 ---
+# 請將這裡替換成你自己的 Google 表單資訊，如果不設定則只會存在網頁後台
+GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/您的表單ID/formResponse"
+ENTRY_SUMMARY = "entry.123456789" # 訂單內容欄位 ID
+ENTRY_PRICE = "entry.987654321"   # 金額欄位 ID
+
+def send_to_google(summary, price):
+    """將訂單資料傳送到 Google 試算表"""
+    if "您的表單ID" in GOOGLE_FORM_URL: return # 未設定則跳過
+    payload = {ENTRY_SUMMARY: summary, ENTRY_PRICE: price}
+    try:
+        requests.post(GOOGLE_FORM_URL, data=payload, timeout=5)
+    except:
+        pass
 
 # --- 菜單資料 ---
 MENU_DATA = {
@@ -19,20 +34,20 @@ MENU_DATA = {
         {"name": "巧克力薯餅吐司+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]}
     ],
     "蛋餅類": [
-        {"name": "原味蛋餅", "price": 30, "can_add": True, "can_spicy": True}, 
-        {"name": "蔥香蛋餅", "price": 35, "can_add": True, "can_spicy": True}, 
-        {"name": "肉鬆蛋餅", "price": 40, "can_add": True, "can_spicy": True}, 
-        {"name": "起司蛋餅", "price": 40, "can_add": True, "can_spicy": True},
-        {"name": "蔬菜蛋餅", "price": 40, "can_add": True, "can_spicy": True},
-        {"name": "火腿蛋餅", "price": 40, "can_add": True, "can_spicy": True},
-        {"name": "香煎培根蛋餅", "price": 40, "can_add": True, "can_spicy": True},
-        {"name": "熱狗蛋餅", "price": 40, "can_add": True, "can_spicy": True},
-        {"name": "塔香蛋餅", "price": 40, "can_add": True, "can_spicy": True},
-        {"name": "玉米蛋餅", "price": 40, "can_add": True, "can_spicy": True},
-        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True, "can_spicy": True},
-        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "can_spicy": True},
-        {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "can_spicy": True},
-        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "can_spicy": True}
+        {"name": "原味蛋餅", "price": 30, "can_add": True}, 
+        {"name": "蔥香蛋餅", "price": 35, "can_add": True}, 
+        {"name": "肉鬆蛋餅", "price": 40, "can_add": True}, 
+        {"name": "起司蛋餅", "price": 40, "can_add": True},
+        {"name": "蔬菜蛋餅", "price": 40, "can_add": True},
+        {"name": "火腿蛋餅", "price": 40, "can_add": True},
+        {"name": "香煎培根蛋餅", "price": 40, "can_add": True},
+        {"name": "熱狗蛋餅", "price": 40, "can_add": True},
+        {"name": "塔香蛋餅", "price": 40, "can_add": True},
+        {"name": "玉米蛋餅", "price": 40, "can_add": True},
+        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True},
+        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True},
+        {"name": "里肌肉蛋餅", "price": 50, "can_add": True},
+        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True}
     ],
     "泡麵系列 (2包)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "can_spicy": True, "sub": "內含:高麗菜,紅蘿蔔,肉絲,洋蔥,蒜碎,蔥花,玉米"}, 
@@ -56,14 +71,14 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25, "is_jam": True}, {"name": "奶酥厚片", "price": 30, "is_jam": True}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
-        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
-        {"name": "薯餅吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True, "is_toast": True, "can_spicy": True}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "no_v": True, "is_toast": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
+        {"name": "培根吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "no_v": True, "is_toast": True},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "no_v": True, "is_toast": True},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "no_v": True, "is_toast": True}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "no_v": True, "is_toast": True}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
@@ -130,9 +145,15 @@ def clear():
         loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
         counts = Counter([i['name'] for i in cart])
         now = datetime.now()
-        summary = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
+        # 準備訂單摘要文字
+        summary_text = f"【{loc}】\n" + "\n".join([f"{n} x{c}" for n,c in counts.items()])
+        summary_html = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
+        
+        # 同步到 Google 試算表
+        send_to_google(summary_text, t)
+        
         total_income += t
-        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": now}
+        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": now}
         history.append(order)
         session.clear()
         return render_template_string(PRINT_HTML, order=order)
@@ -150,7 +171,9 @@ def delete_order():
     history = [h for h in history if h['id'] != oid]
     return jsonify({"status": "ok"})
 
-# --- HTML 模板 ---
+# --- HTML 模板 (INDEX, CART, PRINT, BOSS 均已包含在內) ---
+# [內容與上一個版本相同，僅邏輯層更新]
+# ... (為了節省空間，此處省略與上版重複的 HTML，但請完整覆蓋您的檔案)
 
 INDEX_HTML = """
 <!DOCTYPE html>
