@@ -1,10 +1,10 @@
 from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
 import os, secrets, requests, datetime
-import pytz  # 處理台灣時區
+import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v17_final"
+app.secret_key = "morning_noodle_v18_final"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -34,7 +34,7 @@ def sync_to_google(summary, price, info, pay_method="現金"):
         pass
 
 # ==========================================
-# 🍱 [完整菜單資料]
+# 🍱 [菜單資料]
 # ==========================================
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 MENU_DATA = {
@@ -316,7 +316,13 @@ BOSS_HTML = """
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
-    function finish(id, method){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method}).then(()=>location.reload()) }
+    function finish(id, method){ 
+        fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method})
+        .then(()=>{
+            prt(id); // 完成付款後自動列印
+            setTimeout(()=>location.reload(), 1000);
+        }) 
+    }
     function resetOrder(id){ if(confirm('撤回結帳狀態？')){ fetch('/reset_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload()) } }
     function removeOrder(id){ if(confirm('徹底刪除？')){ fetch('/remove_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload()) } }
 </script></head>
@@ -357,9 +363,30 @@ SUCCESS_HTML = """
 """
 
 PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>@media print{.btn{display:none}}</style><script>window.onload=()=>{setTimeout(()=>window.print(),500)}</script></head>
-<body><button class="btn" onclick="window.print()" style="width:100%;padding:10px;">點此列印</button>
-<div style="font-size:22px;"><span style="float:right;">{{order.time.strftime('%H:%M')}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+    body { font-family: sans-serif; font-size: 24px; padding: 15px; line-height: 1.4; }
+    @media print { .no-print { display: none; } }
+</style>
+<script>
+    window.onload = function() {
+        window.print();
+        window.onafterprint = function() { window.close(); };
+        setTimeout(function() { if(!window.closed) window.close(); }, 800);
+    }
+</script></head>
+<body>
+    <div style="font-weight:bold; border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:10px;">
+        <span style="float:right;">{{order.time.strftime('%H:%M')}}</span>
+        <span style="font-size:28px;">{{order.loc}}</span>
+    </div>
+    <div style="font-size:26px; margin-bottom:10px;">{{order.summary|safe}}</div>
+    <div style="border-top:2px solid #000; padding-top:5px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:22px; color:#555;">[{{order.pay}}付款]</span>
+        <b style="font-size:32px;">總計：${{order.price}}</b>
+    </div>
+    <div class="no-print" style="margin-top:30px; text-align:center; color:#888; font-size:14px;">(列印中，完畢後自動關閉)</div>
+</body></html>
 """
 
 if __name__ == "__main__":
