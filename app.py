@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v21_final"
+app.secret_key = "morning_noodle_v24_final"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -83,7 +83,7 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25, "is_jam": True}, {"name": "奶酥厚片", "price": 30, "is_jam": True}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "is_toast": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "is_simple_toast": True, "sub": "⚠️預設無生菜、番茄"},
         {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"},
         {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"},
         {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "is_toast": True, "sub": "✅含生菜、番茄"},
@@ -291,7 +291,7 @@ INDEX_HTML = """
                     {% if item.can_add %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
                     {% if item.add_meat %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
                     {% if item.is_toast %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加生菜',0,this)" style="color:#27ae60">🥬不生菜</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加番茄',0,this)" style="color:#e74c3c">🍅不番茄</div>{% endif %}
-                    {% if item.is_toast or item.is_jam %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>{% endif %}
+                    {% if item.is_toast or item.is_jam or item.is_simple_toast %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">🍞酥一點</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)" style="color:red">🌶️特製辣</div>{% endif %}
                     {% if item.opts %}{% for group in item.opts %}{% set gidx=loop.index %}{% for o in group %}<div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>{% endfor %}{% endfor %}{% endif %}
                 </div>
