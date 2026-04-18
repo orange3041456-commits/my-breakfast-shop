@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v18_final"
+app.secret_key = "morning_noodle_v19_stable"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -306,22 +306,19 @@ BOSS_HTML = """
     body{font-family:sans-serif;background:#f4f4f4;padding:15px;margin-bottom:80px;}
     .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}
     .o.is-done { opacity: 0.7; border-left-color: #bdc3c7; background: #fdfdfd; }
-    .btn-print{background:#333;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;}
+    .btn-print{background:#333;color:#fff;padding:12px 18px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;}
     .btn-cash{background:#27ae60;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;margin-left:5px;}
     .btn-line{background:#00b900;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;margin-left:5px;}
     .btn-reset{background:#fff;color:#e67e22;border:1px solid #e67e22;padding:5px 10px;border-radius:8px;font-size:13px;cursor:pointer;margin-left:10px;}
     .btn-remove{background:#eee;color:#888;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:none;float:right;margin-top:10px;}
     .boss-nav { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
-    .pay-tag { font-size: 13px; font-weight: bold; color: #27ae60; border: 1px solid #27ae60; padding: 2px 8px; border-radius: 5px; }
+    .pay-tag { font-size: 15px; font-weight: bold; color: #27ae60; border: 1px solid #27ae60; padding: 4px 10px; border-radius: 5px; }
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
     function finish(id, method){ 
         fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method})
-        .then(()=>{
-            prt(id); // 完成付款後自動列印
-            setTimeout(()=>location.reload(), 1000);
-        }) 
+        .then(()=>location.reload()) 
     }
     function resetOrder(id){ if(confirm('撤回結帳狀態？')){ fetch('/reset_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload()) } }
     function removeOrder(id){ if(confirm('徹底刪除？')){ fetch('/remove_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload()) } }
@@ -332,11 +329,11 @@ BOSS_HTML = """
     {% for h in logs %}
     <div class="o {{ 'is-done' if h.done else '' }}">
         <span style="float:right;color:#888;">{{h.time.strftime('%H:%M:%S')}}</span><strong style="font-size:22px;">{{h.loc}}</strong>
-        <p style="background:#fffbe6;padding:12px;border-radius:8px;font-size:18px;line-height:1.4;">{{h.summary|safe}}</p>
+        <p style="background:#fffbe6;padding:12px;border-radius:8px;font-size:18px;line-height:1.4;margin:10px 0;">{{h.summary|safe}}</p>
         <div style="display:flex;justify-content:space-between;align-items:center;">
-            <b style="font-size:22px;">${{h.price}}</b>
+            <b style="font-size:24px;">${{h.price}}</b>
             <div>
-                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️</button>
+                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️ 列印</button>
                 {% if not h.done %}<button class="btn-cash" onclick="finish('{{h.id}}','現金')">現金</button><button class="btn-line" onclick="finish('{{h.id}}','LINE Pay')">LINE Pay</button>
                 {% else %}<span class="pay-tag">{{h.pay}}已付</span><button class="btn-reset" onclick="resetOrder('{{h.id}}')">🔄 修改</button>{% endif %}
             </div>
@@ -365,27 +362,27 @@ SUCCESS_HTML = """
 PRINT_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
-    body { font-family: sans-serif; font-size: 24px; padding: 15px; line-height: 1.4; }
+    body { font-family: sans-serif; font-size: 26px; padding: 10px; line-height: 1.3; }
     @media print { .no-print { display: none; } }
 </style>
 <script>
     window.onload = function() {
         window.print();
         window.onafterprint = function() { window.close(); };
-        setTimeout(function() { if(!window.closed) window.close(); }, 800);
+        setTimeout(function() { if(!window.closed) window.close(); }, 1000);
     }
 </script></head>
 <body>
     <div style="font-weight:bold; border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:10px;">
         <span style="float:right;">{{order.time.strftime('%H:%M')}}</span>
-        <span style="font-size:28px;">{{order.loc}}</span>
+        <span style="font-size:32px;">{{order.loc}}</span>
     </div>
-    <div style="font-size:26px; margin-bottom:10px;">{{order.summary|safe}}</div>
-    <div style="border-top:2px solid #000; padding-top:5px; display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:22px; color:#555;">[{{order.pay}}付款]</span>
-        <b style="font-size:32px;">總計：${{order.price}}</b>
+    <div style="font-size:28px; margin-bottom:15px;">{{order.summary|safe}}</div>
+    <div style="border-top:2px solid #000; padding-top:10px; display:flex; justify-content:space-between; align-items:flex-end;">
+        <span style="font-size:20px; color:#333;">[{{order.pay}}付款]</span>
+        <b style="font-size:36px;">總計：${{order.price}}</b>
     </div>
-    <div class="no-print" style="margin-top:30px; text-align:center; color:#888; font-size:14px;">(列印中，完畢後自動關閉)</div>
+    <div class="no-print" style="margin-top:50px; text-align:center; color:#888; font-size:16px; background:#eee; padding:10px;">列印中...印完自動關閉</div>
 </body></html>
 """
 
