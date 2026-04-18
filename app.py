@@ -160,7 +160,6 @@ def clear():
         order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now()}
         history.append(order)
         session['cart'] = [] 
-        # 如果是老闆模式，不進成功頁面，直接返回後台
         if is_boss:
             return redirect(url_for('boss', pw=BOSS_PASSWORD))
         return render_template_string(SUCCESS_HTML)
@@ -270,19 +269,6 @@ INDEX_HTML = """
 </body></html>
 """
 
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}</style>
-<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
-<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
-{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
-<hr><h4>總計: ${{total}}</h4>
-<form action="/clear" method="POST">
-    <input type="hidden" name="is_boss" value="{{is_boss}}">
-    <button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button>
-</form>
-<br><a href="/{% if is_boss %}?mode=boss{% endif %}" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
-"""
-
 BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="15">
 <style>
@@ -322,7 +308,19 @@ BOSS_HTML = """
 </body></html>
 """
 
-# 其他模版保持不變
+CART_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}</style>
+<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
+<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
+{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
+<hr><h4>總計: ${{total}}</h4>
+<form action="/clear" method="POST">
+    <input type="hidden" name="is_boss" value="{{is_boss}}">
+    <button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button>
+</form>
+<br><a href="/{% if is_boss %}?mode=boss{% endif %}" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
+"""
+
 SUCCESS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>body{font-family:sans-serif;text-align:center;padding-top:100px;background:#fdfaf0;}</style>
