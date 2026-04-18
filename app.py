@@ -4,7 +4,7 @@ import pytz  # 處理台灣時區
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v12_final"
+app.secret_key = "morning_noodle_v16_final"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -19,11 +19,8 @@ G_ENTRY_TIME = "entry.1541194223"
 
 def sync_to_google(summary, price, info, pay_method="現金"):
     clean_summary = summary.replace('<br>', ' | ')
-    
-    # --- [修正時區：強制使用台灣時間] ---
     tw_tz = pytz.timezone('Asia/Taipei')
     now_tw = datetime.datetime.now(tw_tz)
-    # 格式：04/18 15:30:05 (內用-3桌-LINE Pay)
     final_info = f"{now_tw.strftime('%m/%d %H:%M:%S')} ({info}-{pay_method})"
     
     payload = {
@@ -37,7 +34,7 @@ def sync_to_google(summary, price, info, pay_method="現金"):
         pass
 
 # ==========================================
-# 🍱 [完整菜單資料]
+# 🍱 [完整菜單資料 - 維持您的設定]
 # ==========================================
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 MENU_DATA = {
@@ -121,7 +118,13 @@ def index():
     cart = session.get('cart', [])
     tid = request.args.get('table')
     is_boss = request.args.get('mode') == 'boss'
-    if tid: session['info'] = {"type": "內用", "table": tid}
+    
+    # --- [關鍵：QR Code 自動偵測桌號] ---
+    if tid:
+        session['info'] = {"type": "內用", "table": tid}
+    elif not session.get('info') or not session['info'].get('table'):
+        session['info'] = {"type": "外帶", "table": ""}
+        
     return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart), table_id=tid, is_boss=is_boss)
 
 @app.route("/update_info", methods=["POST"])
@@ -237,12 +240,16 @@ INDEX_HTML = """
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
 </style>
 <script>
-    let opts={}; let curT="{{table_id if table_id else ''}}"; let tmr;
+    let opts={}; 
+    let curT="{{session.info.table}}"; 
+    let curType="{{session.info.type}}";
+    let tmr;
     function start(){tmr=setTimeout(()=>{let p=prompt("密碼:"); if(p)location.href="/boss?pw="+p},2500)}
     function end(){clearTimeout(tmr)}
-    function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
+    function setT(t,b){curType=t;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
     function buy(n,p,i,requiredCount){
+        if(curType==='內用' && !curT){ alert("⚠️ 內用請先選擇桌號！"); return; }
         let fn=n, fp=p; let selectedCount = 0;
         Object.keys(opts).forEach(k=>{ if(k.indexOf(i+'_')===0){ fn+='+'+opts[k].n; fp+=opts[k].p; selectedCount++; } });
         if(requiredCount && selectedCount < requiredCount){ alert("⚠️ 請先選擇套餐內的品項與飲料！"); return; }
@@ -266,8 +273,13 @@ INDEX_HTML = """
     </div>
     <div class="setup">
         <div style="padding:5px;">用餐方式：
-            <button class="btn type-btn active" onclick="setT('外帶',this)">外帶</button><button class="btn type-btn" onclick="setT('內用',this)">內用</button>
-            <div id="ts" style="display:none;margin-top:8px">桌號：{% for n in range(1,6) %}<button class="btn table-btn" onclick="setN('{{n}}',this)">{{n}}</button>{% endfor %}</div>
+            <button class="btn type-btn {{ 'active' if session.info.type == '外帶' else '' }}" onclick="setT('外帶',this)">外帶</button>
+            <button class="btn type-btn {{ 'active' if session.info.type == '內用' else '' }}" onclick="setT('內用',this)">內用</button>
+            <div id="ts" style="display:{{ 'block' if session.info.type == '內用' else 'none' }};margin-top:8px">桌號：
+                {% for n in range(1,6) %}
+                <button class="btn table-btn {{ 'active' if session.info.table == n|string else '' }}" onclick="setN('{{n}}',this)">{{n}}</button>
+                {% endfor %}
+            </div>
         </div>
     </div>
     {% for cat,items in menu.items() %}
