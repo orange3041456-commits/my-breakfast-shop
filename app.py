@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v8_keep_orders"
+app.secret_key = "morning_noodle_v9_linepay"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -17,12 +17,14 @@ G_ENTRY_SUMMARY = "entry.303092604"
 G_ENTRY_PRICE = "entry.157627510"    
 G_ENTRY_TIME = "entry.1541194223"     
 
-def sync_to_google(summary, price, info):
+def sync_to_google(summary, price, info, pay_method="現金"):
     clean_summary = summary.replace('<br>', ' | ')
+    # 在時間資訊後方加入支付方式
+    final_info = f"{datetime.now().strftime('%m/%d %H:%M:%S')} ({info}-{pay_method})"
     payload = {
         G_ENTRY_SUMMARY: clean_summary,
         G_ENTRY_PRICE: str(price),
-        G_ENTRY_TIME: f"{datetime.now().strftime('%m/%d %H:%M:%S')} ({info})"
+        G_ENTRY_TIME: final_info
     }
     try:
         requests.post(G_URL, data=payload, timeout=5)
@@ -157,8 +159,7 @@ def clear():
         counts = Counter([i['name'] for i in cart])
         summary_html = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
         total_income += t
-        # 新增 done 標記，預設為 False
-        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now(), "done": False}
+        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now(), "done": False, "pay": "未選"}
         history.append(order)
         session['cart'] = [] 
         if is_boss:
@@ -177,19 +178,20 @@ def print_order(oid):
     if target: return render_template_string(PRINT_HTML, order=target)
     return "單據不存在", 404
 
-# --- [ 修改完成邏輯：同步到 Google 但不刪除單子 ] ---
+# --- [ 修改後的結帳邏輯：支援 LINE Pay 選項 ] ---
 @app.route("/finish_order", methods=["POST"])
 def finish_order():
     oid = request.form.get("id")
+    method = request.form.get("method", "現金")
     target = next((h for h in history if h['id'] == oid), None)
     if target:
-        if not target['done']: # 防止重複同步
-            sync_to_google(target['summary'], target['price'], target['loc'])
-            target['done'] = True # 標記為已完成
-        return jsonify({"status": "ok"})
+        if not target['done']:
+            sync_to_google(target['summary'], target['price'], target['loc'], method)
+            target['done'] = True
+            target['pay'] = method
+        return jsonify({"status": "ok", "method": method})
     return jsonify({"status": "error"}), 404
 
-# --- [ 如果真的需要徹底刪除單子（例如清空畫面），可以保留這個功能或按鈕 ] ---
 @app.route("/remove_order", methods=["POST"])
 def remove_order():
     global history
@@ -287,28 +289,30 @@ INDEX_HTML = """
 """
 
 BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="15">
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="20">
 <style>
     body{font-family:sans-serif;background:#f4f4f4;padding:15px;margin-bottom:80px;}
-    .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00; transition: 0.3s;}
-    .o.is-done { opacity: 0.5; border-left-color: #bdc3c7; }
-    .btn-print{background:#333;color:#fff;padding:12px 20px;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;border:none;}
-    .btn-done{background:#27ae60;color:#fff;padding:12px 20px;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;border:none;margin-left:10px;}
-    .btn-remove{background:#e74c3c;color:#fff;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer;border:none;float:right;margin-top:10px;}
+    .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}
+    .o.is-done { opacity: 0.6; border-left-color: #bdc3c7; background: #f9f9f9; }
+    .btn-print{background:#333;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;}
+    .btn-cash{background:#27ae60;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;margin-left:5px;}
+    .btn-line{background:#00b900;color:#fff;padding:10px 15px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;border:none;margin-left:5px;}
+    .btn-remove{background:#eee;color:#888;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:none;float:right;margin-top:10px;}
     .boss-nav { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
+    .pay-tag { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #eee; margin-left: 10px; color: #666; }
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
-    function finish(id,e){ 
-        fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
-        .then(()=> {
-            e.closest('.o').classList.add('is-done');
-            e.innerText = "✔️ 已存檔";
-            e.disabled = true;
+    function finish(id, method, e){ 
+        fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method})
+        .then(r=>r.json()).then(d=>{
+            let card = e.closest('.o');
+            card.classList.add('is-done');
+            card.querySelector('.action-area').innerHTML = '<b style="color:#27ae60">✅ 已存檔 ('+d.method+')</b>';
         })
     }
     function removeOrder(id,e){
-        if(confirm('確定要從畫面上徹底刪除此訂單嗎？')){
+        if(confirm('確定徹底刪除？')){
             fetch('/remove_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
             .then(()=>e.closest('.o').remove())
         }
@@ -324,17 +328,21 @@ BOSS_HTML = """
     <div class="o {{ 'is-done' if h.done else '' }}">
         <span style="float:right;color:#888;">{{h.time.strftime('%H:%M:%S')}}</span>
         <strong style="font-size:22px;">{{h.loc}}</strong>
-        <p style="background:#fffbe6;padding:15px;border-radius:8px;font-size:19px;line-height:1.5;">{{h.summary|safe}}</p>
+        {% if h.done %}<span class="pay-tag">{{h.pay}}</span>{% endif %}
+        <p style="background:#fffbe6;padding:12px;border-radius:8px;font-size:18px;line-height:1.4;">{{h.summary|safe}}</p>
         <div style="display:flex;justify-content:space-between;align-items:center;">
-            <b style="font-size:24px;">金額：${{h.price}}</b>
-            <div>
-                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️ 印單</button>
-                <button class="btn-done" onclick="finish('{{h.id}}',this)" {{ 'disabled' if h.done else '' }}>
-                    {{ '✔️ 已存檔' if h.done else '✔️ 完成' }}
-                </button>
+            <b style="font-size:22px;">${{h.price}}</b>
+            <div class="action-area">
+                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️</button>
+                {% if not h.done %}
+                    <button class="btn-cash" onclick="finish('{{h.id}}','現金',this)">現金結帳</button>
+                    <button class="btn-line" onclick="finish('{{h.id}}','LINE Pay',this)">LINE Pay</button>
+                {% else %}
+                    <b style="color:#27ae60">✅ 已存檔 ({{h.pay}})</b>
+                {% endif %}
             </div>
         </div>
-        <button class="btn-remove" onclick="removeOrder('{{h.id}}',this)">🗑️ 徹底刪除(不顯示)</button>
+        <button class="btn-remove" onclick="removeOrder('{{h.id}}',this)">🗑️ 刪除</button>
     </div>
     {% endfor %}
     </div>
