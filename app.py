@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v7_final_fix"
+app.secret_key = "morning_noodle_v8_keep_orders"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -157,7 +157,8 @@ def clear():
         counts = Counter([i['name'] for i in cart])
         summary_html = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
         total_income += t
-        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now()}
+        # 新增 done 標記，預設為 False
+        order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": datetime.now(), "done": False}
         history.append(order)
         session['cart'] = [] 
         if is_boss:
@@ -176,16 +177,25 @@ def print_order(oid):
     if target: return render_template_string(PRINT_HTML, order=target)
     return "單據不存在", 404
 
-@app.route("/delete_order", methods=["POST"])
-def delete_order():
-    global history
+# --- [ 修改完成邏輯：同步到 Google 但不刪除單子 ] ---
+@app.route("/finish_order", methods=["POST"])
+def finish_order():
     oid = request.form.get("id")
-    sync_target = next((h for h in history if h['id'] == oid), None)
-    if sync_target:
-        sync_to_google(sync_target['summary'], sync_target['price'], sync_target['loc'])
-        history = [h for h in history if h['id'] != oid]
+    target = next((h for h in history if h['id'] == oid), None)
+    if target:
+        if not target['done']: # 防止重複同步
+            sync_to_google(target['summary'], target['price'], target['loc'])
+            target['done'] = True # 標記為已完成
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
+
+# --- [ 如果真的需要徹底刪除單子（例如清空畫面），可以保留這個功能或按鈕 ] ---
+@app.route("/remove_order", methods=["POST"])
+def remove_order():
+    global history
+    oid = request.form.get("id")
+    history = [h for h in history if h['id'] != oid]
+    return jsonify({"status": "ok"})
 
 # --- [ HTML 模板區 ] ---
 
@@ -215,37 +225,18 @@ INDEX_HTML = """
     function end(){clearTimeout(tmr)}
     function setT(t,b){fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
-    
-    // --- [ 修改後的 buy 函數 ] ---
     function buy(n,p,i,requiredCount){
-        let fn=n, fp=p;
-        let selectedCount = 0;
-        
-        // 檢查該商品已選取的選項數量
-        Object.keys(opts).forEach(k=>{
-            if(k.indexOf(i+'_')===0){
-                fn+='+'+opts[k].n; 
-                fp+=opts[k].p;
-                selectedCount++;
-            }
-        });
-
-        // 如果該商品有「必選組數」，且目前選取的數量不足，則不准加入
-        if(requiredCount && selectedCount < requiredCount){
-            alert("⚠️ 請先選擇套餐內的品項與飲料！");
-            return;
-        }
-
+        let fn=n, fp=p; let selectedCount = 0;
+        Object.keys(opts).forEach(k=>{ if(k.indexOf(i+'_')===0){ fn+='+'+opts[k].n; fp+=opts[k].p; selectedCount++; } });
+        if(requiredCount && selectedCount < requiredCount){ alert("⚠️ 請先選擇套餐內的品項與飲料！"); return; }
         fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"name="+encodeURIComponent(fn)+"&price="+fp})
         .then(r=>r.json()).then(d=>{
             document.getElementById('cc').innerText=d.count;
             document.getElementById('ct').innerText=d.total;
-            // 清空該商品的選擇狀態
             document.querySelectorAll(".opt[data-item='"+i+"']").forEach(x=>x.classList.remove('active'));
             Object.keys(opts).forEach(k=>{if(k.indexOf(i+'_')===0)delete opts[k]});
         })
     }
-
     function tgl(i,n,p,b,grp){
         if(grp){document.querySelectorAll(".opt[data-grp='"+i+"_"+grp+"']").forEach(x=>{if(x!==b){x.classList.remove('active');delete opts[i+'_'+x.getAttribute('data-val')]}})}
         let k=i+'_'+n; if(opts[k]){delete opts[k];b.classList.remove('active')}else{opts[k]={n:n,p:p};b.classList.add('active')}
@@ -266,7 +257,6 @@ INDEX_HTML = """
         <div class="title">{{cat}}</div>
         {% for item in items %}
             {% set iid = "id" ~ loop.index ~ cat[0] %}
-            {# 計算必選組數：如果有 opts 屬性，就取其長度 #}
             {% set req_count = item.opts|length if item.opts else 0 %}
             <div class="card">
                 <div class="row">
@@ -275,7 +265,6 @@ INDEX_HTML = """
                         {% if item.sub %}<div class="sub-info">{{item.sub}}</div>{% endif %}
                         <div class="price">${{item.price}}</div>
                     </div>
-                    {# 將 req_count 傳入 buy 函數 #}
                     <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}',{{req_count}})">加入</button>
                 </div>
                 <div class="grid">
@@ -301,18 +290,28 @@ BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="15">
 <style>
     body{font-family:sans-serif;background:#f4f4f4;padding:15px;margin-bottom:80px;}
-    .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}
-    .btn-print{background:#333;color:#fff;padding:12px 25px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;}
-    .btn-done{background:#27ae60;color:#fff;padding:12px 25px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;border:none;margin-left:10px;}
+    .o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:8px solid #ffbe00; transition: 0.3s;}
+    .o.is-done { opacity: 0.5; border-left-color: #bdc3c7; }
+    .btn-print{background:#333;color:#fff;padding:12px 20px;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;border:none;}
+    .btn-done{background:#27ae60;color:#fff;padding:12px 20px;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;border:none;margin-left:10px;}
+    .btn-remove{background:#e74c3c;color:#fff;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer;border:none;float:right;margin-top:10px;}
     .boss-nav { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
-    function del(id,e){ 
-        if(confirm('確認完成並存檔？')){
-            fetch('/delete_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
+    function finish(id,e){ 
+        fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
+        .then(()=> {
+            e.closest('.o').classList.add('is-done');
+            e.innerText = "✔️ 已存檔";
+            e.disabled = true;
+        })
+    }
+    function removeOrder(id,e){
+        if(confirm('確定要從畫面上徹底刪除此訂單嗎？')){
+            fetch('/remove_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
             .then(()=>e.closest('.o').remove())
-        } 
+        }
     }
 </script></head>
 <body>
@@ -322,14 +321,20 @@ BOSS_HTML = """
     </div>
     <div style="margin-top: 60px;">
     {% for h in logs %}
-    <div class="o">
+    <div class="o {{ 'is-done' if h.done else '' }}">
         <span style="float:right;color:#888;">{{h.time.strftime('%H:%M:%S')}}</span>
         <strong style="font-size:22px;">{{h.loc}}</strong>
         <p style="background:#fffbe6;padding:15px;border-radius:8px;font-size:19px;line-height:1.5;">{{h.summary|safe}}</p>
         <div style="display:flex;justify-content:space-between;align-items:center;">
             <b style="font-size:24px;">金額：${{h.price}}</b>
-            <div><button class="btn-print" onclick="prt('{{h.id}}')">🖨️ 印單</button><button class="btn-done" onclick="del('{{h.id}}',this)">✔️ 完成</button></div>
+            <div>
+                <button class="btn-print" onclick="prt('{{h.id}}')">🖨️ 印單</button>
+                <button class="btn-done" onclick="finish('{{h.id}}',this)" {{ 'disabled' if h.done else '' }}>
+                    {{ '✔️ 已存檔' if h.done else '✔️ 完成' }}
+                </button>
+            </div>
         </div>
+        <button class="btn-remove" onclick="removeOrder('{{h.id}}',this)">🗑️ 徹底刪除(不顯示)</button>
     </div>
     {% endfor %}
     </div>
@@ -374,30 +379,15 @@ PRINT_HTML = """
 <style>
     body { font-family: sans-serif; padding: 20px; }
     .t { font-size: 22px; width: 100%; }
-    .btn-reprint { 
-        background: #ffbe00; border: none; padding: 10px; width: 100%; 
-        font-size: 20px; font-weight: bold; margin-bottom: 20px; cursor: pointer;
-    }
-    @media print {
-        .btn-reprint { display: none; }
-        body { padding: 0; }
-        .t { font-size: 24px; }
-    }
+    .btn-reprint { background: #ffbe00; border: none; padding: 10px; width: 100%; font-size: 20px; font-weight: bold; margin-bottom: 20px; cursor: pointer; }
+    @media print { .btn-reprint { display: none; } body { padding: 0; } .t { font-size: 24px; } }
 </style>
-<script>
-    window.onload = () => {
-        setTimeout(() => { window.print(); }, 500);
-    }
-</script></head>
+<script>window.onload = () => { setTimeout(() => { window.print(); }, 500); }</script></head>
 <body>
     <button class="btn-reprint" onclick="window.print()">點此手動列印</button>
     <div class="t">
         <span style="float:right;">{{order.time.strftime('%H:%M')}}</span>
-        <b>{{order.loc}}</b>
-        <hr>
-        {{order.summary|safe}}
-        <hr>
-        <b>總額：${{order.price}}</b>
+        <b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b>
     </div>
 </body></html>
 """
