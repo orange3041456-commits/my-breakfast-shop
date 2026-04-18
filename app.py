@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_pro_v3_boss_flow"
+app.secret_key = "morning_noodle_final_v6"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -203,7 +203,7 @@ INDEX_HTML = """
     .row { display: flex; justify-content: space-between; align-items: flex-start; }
     .price { color: #e67e22; font-weight: bold; font-size: 18px; }
     .add { background: #ffbe00; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; }
-    .sub-info { font-size: 12px; color: #888; margin-top: 2px; line-height: 1.3; }
+    .sub-info { font-size: 12px; color: #888; margin-top: 2px; }
     .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border-top: 1px dashed #eee; padding-top: 12px; }
     .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; }
     .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; }
@@ -347,9 +347,36 @@ SUCCESS_HTML = """
 """
 
 PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>.t{display:none}@media print{body *{visibility:hidden}.t,.t *{visibility:visible}.t{display:block;position:fixed;left:0;top:0;width:100%;font-size:22px;padding:20px}}</style>
-<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),1000)}</script></head>
-<body><div class="t"><span style="float:right;">{{order.time.strftime('%H:%M')}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr>總額：${{order.price}}</div></body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+    body { font-family: sans-serif; padding: 20px; }
+    .t { font-size: 22px; width: 100%; }
+    .btn-reprint { 
+        background: #ffbe00; border: none; padding: 10px; width: 100%; 
+        font-size: 20px; font-weight: bold; margin-bottom: 20px; cursor: pointer;
+    }
+    @media print {
+        .btn-reprint { display: none; }
+        body { padding: 0; }
+        .t { font-size: 24px; }
+    }
+</style>
+<script>
+    window.onload = () => {
+        setTimeout(() => { window.print(); }, 500);
+    }
+</script></head>
+<body>
+    <button class="btn-reprint" onclick="window.print()">點此手動列印</button>
+    <div class="t">
+        <span style="float:right;">{{order.time.strftime('%H:%M')}}</span>
+        <b>{{order.loc}}</b>
+        <hr>
+        {{order.summary|safe}}
+        <hr>
+        <b>總額：${{order.price}}</b>
+    </div>
+</body></html>
 """
 
 if __name__ == "__main__":
