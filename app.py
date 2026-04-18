@@ -118,19 +118,15 @@ def index():
     cart = session.get('cart', [])
     tid = request.args.get('table')
     is_boss = request.args.get('mode') == 'boss'
-    
-    # QR Code 自動偵測桌號
     if tid:
         session['info'] = {"type": "內用", "table": tid}
     elif not session.get('info') or not session['info'].get('type'):
         session['info'] = {"type": "外帶", "table": ""}
-        
     return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart), table_id=tid, is_boss=is_boss)
 
 @app.route("/update_info", methods=["POST"])
 def update_info():
     t = request.form.get("type")
-    # 如果選外帶，清空桌號
     table = request.form.get("table") if t == "內用" else ""
     session['info'] = {"type": t, "table": table}
     return jsonify({"status": "ok"})
@@ -241,31 +237,11 @@ INDEX_HTML = """
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
 </style>
 <script>
-    let opts={}; 
-    let curT="{{session.info.table}}"; 
-    let curType="{{session.info.type}}";
-    let tmr;
+    let opts={}; let curT="{{session.info.table}}"; let curType="{{session.info.type}}"; let tmr;
     function start(){tmr=setTimeout(()=>{let p=prompt("密碼:"); if(p)location.href="/boss?pw="+p},2500)}
     function end(){clearTimeout(tmr)}
-    
-    // --- [修正：選外帶不顯示桌號] ---
-    function setT(t,b){
-        curType=t;
-        if(t==='外帶') { curT=''; } // 清空桌號紀錄
-        fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});
-        document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));
-        b.classList.add('active');
-        // 切換桌號選單顯示/隱藏
-        document.getElementById('ts').style.display=(t==='內用')?'block':'none';
-    }
-
-    function setN(n,b){
-        curT=n;
-        fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});
-        document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));
-        b.classList.add('active');
-    }
-
+    function setT(t,b){curType=t;if(t==='外帶') { curT=''; }fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
+    function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
     function buy(n,p,i,requiredCount){
         if(curType==='內用' && !curT){ alert("⚠️ 內用請先選擇桌號！"); return; }
         let fn=n, fp=p; let selectedCount = 0;
@@ -340,22 +316,9 @@ BOSS_HTML = """
 </style>
 <script>
     function prt(id){ window.open('/print_order/'+id, '_blank', 'width=400,height=600'); }
-    function finish(id, method){ 
-        fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method})
-        .then(()=>location.reload()) 
-    }
-    function resetOrder(id){
-        if(confirm('確定要撤回結帳狀態嗎？(試算表需手動刪除重複項)')){
-            fetch('/reset_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
-            .then(()=>location.reload())
-        }
-    }
-    function removeOrder(id,e){
-        if(confirm('確定徹底刪除？')){
-            fetch('/remove_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id})
-            .then(()=>location.reload())
-        }
-    }
+    function finish(id, method){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+method}).then(()=>location.reload()) }
+    function resetOrder(id){ if(confirm('撤回結帳狀態？')){ fetch('/reset_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload()) } }
+    function removeOrder(id){ if(confirm('徹底刪除？')){ fetch('/remove_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload()) } }
 </script></head>
 <body>
     <div class="boss-nav"><h3 style="margin:0;">💰 營收：${{total}}</h3><a href="/?mode=boss" style="background:#ffbe00;color:#000;padding:8px 15px;border-radius:5px;text-decoration:none;font-weight:bold;">➕ 幫客點餐</a></div>
@@ -369,10 +332,36 @@ BOSS_HTML = """
             <div>
                 <button class="btn-print" onclick="prt('{{h.id}}')">🖨️</button>
                 {% if not h.done %}<button class="btn-cash" onclick="finish('{{h.id}}','現金')">現金</button><button class="btn-line" onclick="finish('{{h.id}}','LINE Pay')">LINE Pay</button>
-                {% else %}<span class="pay-tag">{{h.pay}}已付</span><button class="btn-reset" onclick="resetOrder('{{h.id}}')">🔄 改支付方式</button>{% endif %}
+                {% else %}<span class="pay-tag">{{h.pay}}已付</span><button class="btn-reset" onclick="resetOrder('{{h.id}}')">🔄 修改</button>{% endif %}
             </div>
         </div>
-        <button class="btn-remove" onclick="removeOrder('{{h.id}}',this)">🗑️ 徹底刪除(不顯示)</button>
+        <button class="btn-remove" onclick="removeOrder('{{h.id}}')">🗑️ 刪除</button>
     </div>
     {% endfor %}</div>
 </body></html>
+"""
+
+CART_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}</style>
+<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
+<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
+{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
+<hr><h4>總計: ${{total}}</h4>
+<form action="/clear" method="POST"><input type="hidden" name="is_boss" value="{{is_boss}}"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button></form>
+<br><a href="/{% if is_boss %}?mode=boss{% endif %}" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
+"""
+
+SUCCESS_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><script>setTimeout(()=>location.href='/', 5000)</script></head>
+<body style="text-align:center;padding-top:100px;background:#fdfaf0;"><h1>✅ 訂單已送出</h1><p style="font-size:24px;color:#d35400;">💰 請至櫃檯結帳</p></body></html>
+"""
+
+PRINT_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>@media print{.btn{display:none}}</style><script>window.onload=()=>{setTimeout(()=>window.print(),500)}</script></head>
+<body><button class="btn" onclick="window.print()" style="width:100%;padding:10px;">點此列印</button>
+<div style="font-size:22px;"><span style="float:right;">{{order.time.strftime('%H:%M')}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
+"""
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
