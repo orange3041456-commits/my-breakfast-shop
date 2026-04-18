@@ -4,7 +4,7 @@ import pytz  # 處理台灣時區
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v16_final"
+app.secret_key = "morning_noodle_v17_final"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -34,7 +34,7 @@ def sync_to_google(summary, price, info, pay_method="現金"):
         pass
 
 # ==========================================
-# 🍱 [完整菜單資料 - 維持您的設定]
+# 🍱 [完整菜單資料]
 # ==========================================
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 MENU_DATA = {
@@ -119,17 +119,20 @@ def index():
     tid = request.args.get('table')
     is_boss = request.args.get('mode') == 'boss'
     
-    # --- [關鍵：QR Code 自動偵測桌號] ---
+    # QR Code 自動偵測桌號
     if tid:
         session['info'] = {"type": "內用", "table": tid}
-    elif not session.get('info') or not session['info'].get('table'):
+    elif not session.get('info') or not session['info'].get('type'):
         session['info'] = {"type": "外帶", "table": ""}
         
     return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart), table_id=tid, is_boss=is_boss)
 
 @app.route("/update_info", methods=["POST"])
 def update_info():
-    session['info'] = {"type": request.form.get("type"), "table": request.form.get("table")}
+    t = request.form.get("type")
+    # 如果選外帶，清空桌號
+    table = request.form.get("table") if t == "內用" else ""
+    session['info'] = {"type": t, "table": table}
     return jsonify({"status": "ok"})
 
 @app.route("/add", methods=["POST"])
@@ -167,10 +170,8 @@ def clear():
         counts = Counter([i['name'] for i in cart])
         summary_html = "<br>".join([f"{n} x{c}" for n,c in counts.items()])
         total_income += t
-        
         tw_tz = pytz.timezone('Asia/Taipei')
         now_tw = datetime.datetime.now(tw_tz)
-        
         order = {"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary_html, "time": now_tw, "done": False, "pay": "未選"}
         history.append(order)
         session['cart'] = [] 
@@ -246,8 +247,25 @@ INDEX_HTML = """
     let tmr;
     function start(){tmr=setTimeout(()=>{let p=prompt("密碼:"); if(p)location.href="/boss?pw="+p},2500)}
     function end(){clearTimeout(tmr)}
-    function setT(t,b){curType=t;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
-    function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
+    
+    // --- [修正：選外帶不顯示桌號] ---
+    function setT(t,b){
+        curType=t;
+        if(t==='外帶') { curT=''; } // 清空桌號紀錄
+        fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});
+        document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        // 切換桌號選單顯示/隱藏
+        document.getElementById('ts').style.display=(t==='內用')?'block':'none';
+    }
+
+    function setN(n,b){
+        curT=n;
+        fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});
+        document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+    }
+
     function buy(n,p,i,requiredCount){
         if(curType==='內用' && !curT){ alert("⚠️ 內用請先選擇桌號！"); return; }
         let fn=n, fp=p; let selectedCount = 0;
@@ -358,29 +376,3 @@ BOSS_HTML = """
     </div>
     {% endfor %}</div>
 </body></html>
-"""
-
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}</style>
-<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
-<body><div style="max-width:500px;margin:auto"><h3>🛒 結帳明細 ({{loc}})</h3>
-{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br><small>${{i.price}}</small></div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
-<hr><h4>總計: ${{total}}</h4>
-<form action="/clear" method="POST"><input type="hidden" name="is_boss" value="{{is_boss}}"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">確認送出訂單</button></form>
-<br><a href="/{% if is_boss %}?mode=boss{% endif %}" style="display:block;text-align:center;color:gray;text-decoration:none;">← 返回繼續加點</a></div></body></html>
-"""
-
-SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><script>setTimeout(()=>location.href='/', 5000)</script></head>
-<body style="text-align:center;padding-top:100px;background:#fdfaf0;"><h1>✅ 訂單已送出</h1><p style="font-size:24px;color:#d35400;">💰 請至櫃檯結帳</p></body></html>
-"""
-
-PRINT_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>@media print{.btn{display:none}}</style><script>window.onload=()=>{setTimeout(()=>window.print(),500)}</script></head>
-<body><button class="btn" onclick="window.print()" style="width:100%;padding:10px;">點此列印</button>
-<div style="font-size:22px;"><span style="float:right;">{{order.time.strftime('%H:%M')}}</span><b>{{order.loc}}</b><hr>{{order.summary|safe}}<hr><b>總額：${{order.price}}</b></div></body></html>
-"""
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
