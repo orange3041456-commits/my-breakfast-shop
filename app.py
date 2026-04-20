@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v70_final_veg"
+app.secret_key = "morning_noodle_v71_mayo_tag"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -77,13 +77,13 @@ MENU_DATA = {
     ],
     "烤吐司系列": [
         {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
-        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
-        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"}
+        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
+        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
@@ -247,6 +247,7 @@ INDEX_HTML = """
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','都不要菜',0,this)">❌都不要菜</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌不加生菜</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌不加番茄</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加美乃滋',0,this)">❌美乃滋</div>
                     {% endif %}
 
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
