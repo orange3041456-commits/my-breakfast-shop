@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v95_order_no"
+app.secret_key = "morning_noodle_v95_v3"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -26,7 +26,7 @@ def sync_to_google(summary, price, info, pay_method):
     try: requests.post(G_URL, data=payload, timeout=0.8)
     except: pass
 
-# --- 選單數據 ---
+# --- 選單數據 (略，保持一致) ---
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
@@ -149,14 +149,13 @@ def clear():
     loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
     summary = "<br>".join([f"{n} x{c}" for n,c in Counter([i['name'] for i in cart]).items()])
     
-    # 建立訂單編號
     current_no = order_counter
     history.append({
         "no": current_no, "id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, 
         "time": datetime.datetime.now(pytz.timezone('Asia/Taipei')), 
-        "done": False, "pay": "未選"
+        "done": False, "pay": "未選", "type": info['type'] # 紀錄內用或外帶
     })
-    order_counter += 1 # 編號累加
+    order_counter += 1
     session['cart'] = [] 
     return render_template_string(SUCCESS_HTML, order_no=current_no)
 
@@ -165,7 +164,19 @@ def boss():
     pw = request.args.get("pw")
     if pw == BOSS_PASSWORD: session['is_boss'] = True
     if not session.get('is_boss'): return "<h3>權限不足</h3>", 403
-    stats = {"total_money": sum(h['price'] for h in history if h['done']), "total_count": sum(1 for h in history if h['done'])}
+    
+    # 計算來客數統計 (僅計算已完成或全部，此處計算全部訂單)
+    total_money = sum(h['price'] for h in history if h['done'])
+    total_count = len(history)
+    dine_in_count = sum(1 for h in history if h['type'] == '內用')
+    take_out_count = sum(1 for h in history if h['type'] == '外帶')
+    
+    stats = {
+        "total_money": total_money, 
+        "total_count": total_count,
+        "dine_in": dine_in_count,
+        "take_out": take_out_count
+    }
     return render_template_string(BOSS_HTML, stats=stats, logs=history[::-1])
 
 @app.route("/boss_logout")
@@ -186,7 +197,8 @@ def finish_order():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- 頁面模板 ---
+# --- HTML 模板 ---
+
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
@@ -267,6 +279,8 @@ BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
     body{font-family:sans-serif;background:#eee;padding:15px;}
+    .stat-bar { background:#333; color:#fff; padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-around; text-align:center; }
+    .stat-item b { display:block; font-size:20px; color:#ffbe00; }
     .o{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #ffbe00;position:relative;}
     .o.done{border-left-color:#2ecc71;opacity:0.8;}
     .btn{padding:10px 20px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:8px;}
@@ -283,8 +297,15 @@ BOSS_HTML = """
     }
 </script></head>
 <body>
-    <div style="display:flex;justify-content:space-between;"><a href="/">⬅️ 前台</a><a href="/boss_logout" style="color:red;">登出</a></div>
-    <h3>營收: ${{stats.total_money}} ({{stats.total_count}}單)</h3><hr>
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><a href="/">⬅️ 前台</a><a href="/boss_logout" style="color:red;">登出</a></div>
+    
+    <div class="stat-bar">
+        <div class="stat-item">今日營收<b>${{stats.total_money}}</b></div>
+        <div class="stat-item">總單數<b>{{stats.total_count}}</b></div>
+        <div class="stat-item">內用<b>{{stats.dine_in}}</b></div>
+        <div class="stat-item">外帶<b>{{stats.take_out}}</b></div>
+    </div>
+
     {% for h in logs %}<div class="o {{ 'done' if h.done else '' }}">
         <div style="display:flex;justify-content:space-between"><b>#{{h.no}} | {{h.loc}}</b><span>{{h.time.strftime('%H:%M')}}</span></div>
         <div style="padding:5px 0;">{{h.summary|safe}}</div>
@@ -302,14 +323,15 @@ CART_HTML = """
 """
 
 SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 10000)</script></head>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 5000)</script></head>
 <body style="text-align:center;padding-top:80px;font-family:sans-serif;background:#fdfaf0;">
     <div style="background:#fff;margin:20px;padding:40px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
         <h2 style="color:#2ecc71;">✅ 訂單已送出</h2>
         <p>您的取餐編號為</p>
         <h1 style="font-size:80px;margin:20px 0;color:#333;">#{{order_no}}</h1>
         <p style="color:#888;">請記住編號並至櫃檯結帳</p>
-        <div style="margin-top:30px;font-size:13px;color:gray;">10秒後自動回首頁</div>
+        <a href="/" style="display:inline-block;margin-top:20px;padding:12px 30px;background:#ffbe00;color:#000;text-decoration:none;border-radius:25px;font-weight:bold;box-shadow:0 2px 5px rgba(0,0,0,0.1);">立即回首頁</a>
+        <div style="margin-top:20px;font-size:13px;color:gray;">5秒後自動跳轉</div>
     </div>
 </body></html>
 """
