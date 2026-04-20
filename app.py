@@ -5,7 +5,7 @@ from collections import Counter
 import json
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v25_final"
+app.secret_key = "morning_noodle_v27_final"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -91,19 +91,19 @@ MENU_DATA = {
         {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True}
     ],
     "泡麵系列 (2包)": [
-        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB},
-        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB},
-        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB}
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB}, 
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB},
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB},
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "sub": "無肉絲，附基本配料"},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "sub": "無肉絲，附基本配料"},
-        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB},
-        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NOODLE_SUB}
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": "無肉絲，附基本配料"},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": "無肉絲，附基本配料"},
+        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB}, 
+        {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB},
+        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "is_noodle": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
         {"name": "巧克力吐司", "price": 25, "is_jam": True}, {"name": "巧克力厚片", "price": 30, "is_jam": True},
@@ -335,6 +335,16 @@ INDEX_HTML = """
                     {% if item.is_toast %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加生菜',0,this)">不生菜</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加番茄',0,this)">不番茄</div>{% endif %}
                     {% if item.is_toast or item.is_jam or item.is_simple_toast %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">酥一點</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
+                    
+                    {# 麵類配菜細項 #}
+                    {% if item.is_noodle %}
+                    <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不要配菜',0,this)" style="color:#d35400;font-weight:bold;">❌不要配菜</div>
+                    <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加高麗菜',0,this)">不加高麗菜</div>
+                    <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蔥花',0,this)">不加蔥花</div>
+                    <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加紅蘿蔔',0,this)">不加紅蘿蔔</div>
+                    <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加玉米',0,this)">不加玉米</div>
+                    {% endif %}
+
                     {% if item.opts %}{% for group in item.opts %}{% set gidx=loop.index %}{% for o in group %}<div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>{% endfor %}{% endfor %}{% endif %}
                 </div>
             </div>
