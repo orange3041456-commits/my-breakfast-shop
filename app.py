@@ -42,8 +42,8 @@ MENU_DATA = {
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "⚠️ 請務必選擇品項與飲料", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
         {"name": "肉蛋吐司+紅茶", "price": 60},
         {"name": "熱狗(3支)+蛋+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]},
-        {"name": "草莓肉鬆吐司+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]},
-        {"name": "巧克力薯餅吐司+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]}
+        {"name": "草莓肉鬆吐司+飲品", "price": 50, "sub": "🍓 鹹甜推薦", "can_add": True, "opts": [["選紅茶", "選冷泡茶"]]},
+        {"name": "巧克力薯餅吐司+飲品", "price": 50, "sub": "🍫 酥脆組合", "can_add": True, "opts": [["選紅茶", "選冷泡茶"]]}
     ],
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True, "add_meat": True}, 
@@ -357,15 +357,21 @@ CART_HTML = """
 """
 
 SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><script>setTimeout(()=>location.href='/', 5000)</script></head>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><script>setTimeout(()=>location.href='/', 3000)</script></head>
 <body style="text-align:center;padding-top:100px;background:#fdfaf0;"><h1>✅ 訂單已送出</h1><p style="font-size:24px;color:#d35400;">💰 請至櫃檯結帳</p></body></html>
 """
 
 PRINT_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
-    body { font-family: sans-serif; font-size: 26px; padding: 10px; line-height: 1.3; }
-    @media print { .btn { display: none; } }
+    body { font-family: sans-serif; font-size: 24px; padding: 0; margin: 0; width: 100%; }
+    .ticket { width: 100%; padding: 5px; box-sizing: border-box; }
+    .header-row { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+    .loc-text { font-size: 38px; font-weight: bold; }
+    .time-text { font-size: 18px; float: right; margin-top: 15px; }
+    .item-list { font-size: 32px; line-height: 1.4; margin-bottom: 20px; min-height: 100px; }
+    .footer-row { border-top: 2px solid #000; padding-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+    @media print { .btn { display: none; } body { margin: 0; } }
 </style>
 <script>
     window.onload = () => { 
@@ -373,25 +379,23 @@ PRINT_HTML = """
             window.print();
             window.onafterprint = () => window.close(); 
             setTimeout(() => { if(!window.closed) window.close(); }, 2000);
-        }, 500); 
+        }, 300); 
     }
 </script></head>
 <body>
-    <button class="btn" onclick="window.print()" style="width:100%; padding:20px; font-size:20px; margin-bottom:20px;">點此手動列印</button>
-    <div style="font-weight:bold; border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:10px;">
-        <span style="float:right; font-size:18px;">{{order.time.strftime('%H:%M')}}</span>
-        <span style="font-size:32px;">{{order.loc}}</span>
-    </div>
-    <div style="font-size:28px; margin-bottom:15px;">{{order.summary|safe}}</div>
-    <div style="border-top:2px solid #000; padding-top:10px; display:flex; justify-content:space-between; align-items:flex-end;">
-        <span style="font-size:20px; color:#333;">
-            {% if order.done %}
-                [{{order.pay}}付款]
-            {% else %}
-                [待結帳]
-            {% endif %}
-        </span>
-        <b style="font-size:36px;">總計：${{order.price}}</b>
+    <button class="btn" onclick="window.print()" style="width:100%; padding:20px; font-size:20px;">點此手動列印</button>
+    <div class="ticket">
+        <div class="header-row">
+            <span class="time-text">{{order.time.strftime('%H:%M')}}</span>
+            <span class="loc-text">{{order.loc}}</span>
+        </div>
+        <div class="item-list">{{order.summary|safe}}</div>
+        <div class="footer-row">
+            <span style="font-size:20px;">
+                {% if order.done %}[{{order.pay}}]{% else %}[未結帳]{% endif %}
+            </span>
+            <b style="font-size:42px;">總計:${{order.price}}</b>
+        </div>
     </div>
 </body></html>
 """
