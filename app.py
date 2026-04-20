@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v64_hidden_nav"
+app.secret_key = "morning_noodle_v65_return_to_classic"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -168,13 +168,13 @@ def finish_order():
     return jsonify({"status": "error"}), 404
 
 # ==========================================
-# 📱 [前台頁面] (新增老闆專用隱藏按鈕)
+# 📱 [前台頁面] (長按標題進後台)
 # ==========================================
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
     body { font-family: sans-serif; background: #fdfaf0; margin: 0; padding: 0 10px 100px; }
-    .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; font-size: 20px; }
+    .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; font-size: 20px; user-select: none; -webkit-user-select: none; }
     .setup { background: #fff; margin: 10px 0; padding: 12px; border-radius: 10px; border-left: 6px solid #ffbe00; }
     .btn { padding: 8px 15px; border: 1.5px solid #ddd; border-radius: 20px; background: #f8f9fa; margin: 3px; cursor: pointer; }
     .btn.active { background: #ffbe00; font-weight: bold; border-color: #ffbe00; }
@@ -186,25 +186,14 @@ INDEX_HTML = """
     .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; }
     .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-    
-    /* 🤫 老闆專用隱藏熱點 - 位於頁面最底部，背景色跟背景一樣，看不出來 */
-    .boss-hidden-entry {
-        position: relative;
-        height: 50px;
-        width: 100%;
-        background: transparent;
-        margin-top: 20px;
-        cursor: default;
-    }
 </style>
 <script>
     let opts={}; let curT="{{session.info.table}}"; let curType="{{session.info.type}}";
+    let pressTimer;
 
-    function goToBoss() {
-        let pw = prompt("請輸入管理密碼:");
-        if (pw === "8888") { window.location.href = "/boss?pw=8888"; }
-        else if (pw !== null) { alert("密碼錯誤"); }
-    }
+    // 長按 3 秒標題進後台
+    function startPress(){ pressTimer = setTimeout(() => { window.location.href='/boss?pw=8888'; }, 3000); }
+    function endPress(){ clearTimeout(pressTimer); }
 
     function setT(t,b){curType=t;if(t==='外帶')curT='';fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
@@ -224,7 +213,7 @@ INDEX_HTML = """
     }
 </script></head>
 <body>
-    <div class="header">🍜 晨食麵所</div>
+    <div class="header" onmousedown="startPress()" onmouseup="endPress()" ontouchstart="startPress()" ontouchend="endPress()">🍜 晨食麵所</div>
     <div class="setup">
         方式：<button class="btn type-btn {{ 'active' if session.info.type == '外帶' else '' }}" onclick="setT('外帶',this)">外帶</button>
         <button class="btn type-btn {{ 'active' if session.info.type == '內用' else '' }}" onclick="setT('內用',this)">內用</button>
@@ -260,9 +249,6 @@ INDEX_HTML = """
             </div>
         {% endfor %}
     {% endfor %}
-
-    <div class="boss-hidden-entry" onclick="goToBoss()"></div>
-
     <div class="footer"><span>已點 <span id="cc">{{cart_len}}</span> 項 | $<span id="ct">{{total}}</span></span><a href="/cart" style="background:#ffbe00;color:#000;padding:8px 20px;border-radius:20px;text-decoration:none;font-weight:bold;">去結帳</a></div>
 </body></html>
 """
@@ -346,19 +332,3 @@ BOSS_HTML = """
 </div>
 {% endfor %}
 </body></html>
-"""
-
-# [其餘輔助頁面內容不變]
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;}</style>
-<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
-<body><h3>🛒 結帳明細 ({{loc}})</h3>{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br>${{i.price}}</div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
-<hr><h4>總計: ${{total}}</h4><form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;">確認送出訂單</button></form><br><a href="/" style="display:block;text-align:center;color:gray;text-decoration:none;">返回繼續加點</a></body></html>
-"""
-
-SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 3000)</script></head><body style="text-align:center;padding-top:100px;"><h1>✅ 訂單已送出</h1><p>請至櫃檯結帳</p></body></html>
-"""
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
