@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v66_fixed"
+app.secret_key = "morning_noodle_v67_fixed_options"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -231,6 +231,7 @@ INDEX_HTML = """
                     {% if item.add_meat %}<div class="opt" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
                     {% if item.can_crispy %}<div class="opt" onclick="tgl('{{iid}}','酥一點',0,this)">🍞 酥一點</div>{% endif %}
+                    
                     {% if item.can_no_side %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加高麗菜',0,this)">❌高麗菜</div>
@@ -238,6 +239,12 @@ INDEX_HTML = """
                         <div class="opt" onclick="tgl('{{iid}}','不加肉絲',0,this)">❌肉絲</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加蒜碎',0,this)">❌蒜碎</div>
                     {% endif %}
+
+                    {% if item.can_no_veg %}
+                        <div class="opt" style="color:red" onclick="tgl('{{iid}}','生菜番茄不要',0,this)">❌生菜番茄</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加洋蔥',0,this)">❌洋蔥</div>
+                    {% endif %}
+
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
                         <div class="opt" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>
                     {% endfor %}{% endfor %}{% endif %}
