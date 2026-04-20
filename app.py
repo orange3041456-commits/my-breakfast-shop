@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v95_final_v2"
+app.secret_key = "morning_noodle_v95_final_v3"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -29,7 +29,6 @@ def sync_to_google(summary, price, info, pay_method):
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
-# 針對無肉絲麵種的配料說明
 NO_MEAT_NOODLE_SUB = "【無肉絲】配料：高麗菜、紅蘿蔔、蒜碎、洋蔥、蔥花、玉米"
 TOAST_SUB = "✅含生菜、番茄、美乃滋"
 EXCLUDE_VEG_OPTS = ["不要高麗菜", "不要紅蘿蔔", "不要肉絲", "不要蒜碎", "不要洋蔥", "不要蔥花", "不要玉米"]
@@ -60,17 +59,18 @@ MENU_DATA = {
     ],
     "泡麵系列 (2包)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "起司魂炒泡麵", "price": 80, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣炒泡麵", "price": 85, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NO_MEAT_NOODLE_SUB},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NO_MEAT_NOODLE_SUB},
+        # 蘑菇麵與黑胡椒麵重新開啟 has_precision_no 選項
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NO_MEAT_NOODLE_SUB},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NO_MEAT_NOODLE_SUB},
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "起司魂炒麵", "price": 80, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣起司炒麵", "price": 85, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
@@ -258,7 +258,14 @@ INDEX_HTML = """
                     {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">🌶️ 特製辣</div>{% endif %}
                     {% if item.can_crispy %}<div class="opt" onclick="tgl('{{iid}}','酥一點',0,this)">🍞 酥一點</div>{% endif %}
                     {% if item.can_no_crust %}<div class="opt" onclick="tgl('{{iid}}','去邊',0,this)">🍞 去邊</div>{% endif %}
-                    {% if item.has_precision_no %}{% for v in no_veg_list %}<div class="opt no-btn" onclick="tgl('{{iid}}','{{v}}',0,this)">{{v}}</div>{% endfor %}{% endif %}
+                    {% if item.has_precision_no %}
+                        {% for v in no_veg_list %}
+                            {# 如果麵種包含「無肉絲」文字，則跳過顯示「不要肉絲」按鈕 #}
+                            {% if not (item.sub and "無肉絲" in item.sub and v == "不要肉絲") %}
+                                <div class="opt no-btn" onclick="tgl('{{iid}}','{{v}}',0,this)">{{v}}</div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
                     {% if item.can_no_veg %}<div class="opt no-btn" onclick="tgl('{{iid}}','不加生菜',0,this)">不加生菜</div><div class="opt no-btn" onclick="tgl('{{iid}}','不加番茄',0,this)">不加番茄</div><div class="opt no-btn" onclick="tgl('{{iid}}','不加美乃滋',0,this)">不加美乃滋</div>{% endif %}
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}<div class="opt" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>{% endfor %}{% endfor %}{% endif %}
                 </div>
