@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v83_fixed_final"
+app.secret_key = "morning_noodle_v85_print_reset"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -20,10 +20,10 @@ def sync_to_google(summary, price, info, pay_method):
         G_ENTRIES["price"]: str(price),
         G_ENTRIES["time"]: f"{time_str} ({info}-{pay_method})"
     }
-    try: requests.post(G_URL, data=payload, timeout=5)
+    try: requests.post(G_URL, data=payload, timeout=0.8)
     except: pass
 
-# --- 選單基礎設定 ---
+# --- 選單數據 ---
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
@@ -169,12 +169,12 @@ def finish_order():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- 頁面 HTML ---
+# --- 頁面模板 ---
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
     body { font-family: sans-serif; background: #fdfaf0; margin: 0; padding: 0 10px 100px; }
-    .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; font-size: 20px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+    .header { background: #ffbe00; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 15px 15px; font-weight: bold; font-size: 20px; cursor: pointer; user-select: none; }
     .setup { background: #fff; margin: 10px 0; padding: 12px; border-radius: 10px; border-left: 6px solid #ffbe00; }
     .btn { padding: 8px 15px; border: 1.5px solid #ddd; border-radius: 20px; background: #f8f9fa; margin: 3px; cursor: pointer; }
     .btn.active { background: #ffbe00; font-weight: bold; border-color: #ffbe00; }
@@ -190,7 +190,7 @@ INDEX_HTML = """
 <script>
     let opts={}; let curT="{{session.info.table}}"; let curType="{{session.info.type}}";
     let pressTimer;
-    function startPress(){ pressTimer = window.setTimeout(function(){ window.location.href='/boss?pw=8888'; }, 3000); }
+    function startPress(){ pressTimer = window.setTimeout(() => window.location.href='/boss?pw=8888', 3000); }
     function endPress(){ window.clearTimeout(pressTimer); }
     function setT(t,b){curType=t;if(t==='外帶')curT='';fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
@@ -232,7 +232,6 @@ INDEX_HTML = """
                     {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
                     {% if item.can_crispy %}<div class="opt" onclick="tgl('{{iid}}','酥一點',0,this)">🍞 酥一點</div>{% endif %}
                     {% if item.can_no_crust %}<div class="opt" onclick="tgl('{{iid}}','去邊',0,this)">🍞 去邊</div>{% endif %}
-                    
                     {% if item.can_no_side %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加高麗菜',0,this)">❌高麗菜</div>
@@ -243,14 +242,12 @@ INDEX_HTML = """
                         <div class="opt" onclick="tgl('{{iid}}','不加蔥花',0,this)">❌蔥花</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加玉米',0,this)">❌玉米</div>
                     {% endif %}
-                    
                     {% if item.can_no_veg %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','都不要菜',0,this)">❌都不要菜</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌生菜</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌番茄</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加美乃滋',0,this)">❌美乃滋</div>
                     {% endif %}
-                    
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
                         <div class="opt" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>
                     {% endfor %}{% endfor %}{% endif %}
@@ -269,42 +266,46 @@ BOSS_HTML = """
     .o{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #ffbe00;position:relative;}
     .o.done{border-left-color:#2ecc71;opacity:0.8;}
     .btn{padding:10px 20px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:8px;}
-    .cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}.reset{background:#95a5a6;color:#fff;}
+    .cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}.reset{background:#e74c3c;color:#fff;}
     @media print { 
         body * { visibility: hidden; } 
         #print-area, #print-area * { visibility: visible; } 
-        #print-area { 
-            position: absolute; left: 0; top: 0; width: 54mm; 
-            font-size: 16px; line-height: 1.3; color: #000;
-        } 
+        #print-area { position: absolute; left: 0; top: 0; width: 54mm; font-size: 16px; line-height: 1.3; color: #000;} 
         .no-print { display: none; } 
         @page { margin: 0; }
     }
 </style>
 <script>
     function finish(id, m, loc, time, summary, price) {
-        if(m==='RESET'){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload()); return; }
-        let p = `<div id="print-area"><h3>晨食麵所</h3><p>${time}</p><b>區域: ${loc}</b><hr>${summary}<hr><b>總計: $${price} (${m})</b><br>.<br>.</div>`;
-        let old = document.getElementById('print-box'); if(old) old.remove();
-        let div = document.createElement('div'); div.id = 'print-box'; div.innerHTML = p;
-        document.body.appendChild(div); window.print();
+        if(m==='RESET'){ 
+            if(confirm('確定要重設這筆訂單嗎？（會從營業額扣除）')){
+                fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload());
+            }
+            return; 
+        }
+        // 列印邏輯
+        let p = `<div id="print-area"><h3>晨食麵所</h3><p>${time}</p><b>區域: ${loc}</b><hr>${summary.replace(/<br>/g, '<br>')}<hr><b>總計: $${price} (${m})</b><br>.<br>.</div>`;
+        let div = document.createElement('div'); div.innerHTML = p;
+        document.body.appendChild(div); 
+        window.print();
+        
         fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload());
     }
 </script></head>
 <body>
-    <div class="no-print">
-        <a href="/" style="text-decoration:none;color:#555;">⬅️ 回點餐頁</a>
-        <h3>今日營收: ${{stats.total_money}} ({{stats.total_count}}單)</h3><hr>
-    </div>
+    <div class="no-print"><a href="/" style="text-decoration:none;color:#555;">⬅️ 回點餐頁</a><h3>今日營收: ${{stats.total_money}} ({{stats.total_count}}單)</h3><hr></div>
     {% for h in logs %}<div class="o {{ 'done' if h.done else '' }}">
         <div><b>{{h.loc}}</b> | {{h.time.strftime('%H:%M:%S')}}</div>
         <div style="padding:8px 0;">{{h.summary|safe}}</div>
         <div style="font-size:18px;color:#e67e22;font-weight:bold;">${{h.price}}</div>
-        <div class="no-print">
+        <div class="no-print" style="margin-top:10px;">
             {% if not h.done %}
-                <button class="btn cash" onclick="finish('{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary|safe}}','{{h.price}}')">現金結帳</button>
-                <button class="btn line" onclick="finish('{{h.id}}','LINE Pay','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary|safe}}','{{h.price}}')">LINE Pay</button>
-            {% else %}<span>✅ ({{h.pay}})</span> <button class="btn reset" onclick="finish('{{h.id}}','RESET')">重設</button>{% endif %}
+                <button class="btn cash" onclick="finish('{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary}}','{{h.price}}')">現金結帳</button>
+                <button class="btn line" onclick="finish('{{h.id}}','LINE Pay','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary}}','{{h.price}}')">LINE Pay</button>
+            {% else %}
+                <span style="font-weight:bold;color:#2ecc71;">✅ 已收單 ({{h.pay}})</span> 
+                <button class="btn reset" style="margin-left:20px; font-size:12px; padding:5px 10px;" onclick="finish('{{h.id}}','RESET')">按錯重設</button>
+            {% endif %}
         </div>
     </div>{% endfor %}
 </body></html>
