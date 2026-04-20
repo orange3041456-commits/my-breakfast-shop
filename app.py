@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v65_return_to_classic"
+app.secret_key = "morning_noodle_v66_fixed"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -190,14 +190,10 @@ INDEX_HTML = """
 <script>
     let opts={}; let curT="{{session.info.table}}"; let curType="{{session.info.type}}";
     let pressTimer;
-
-    // 長按 3 秒標題進後台
     function startPress(){ pressTimer = setTimeout(() => { window.location.href='/boss?pw=8888'; }, 3000); }
     function endPress(){ clearTimeout(pressTimer); }
-
     function setT(t,b){curType=t;if(t==='外帶')curT='';fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
-    
     function buy(btn){
         let i=btn.dataset.id, n=btn.dataset.name, p=parseInt(btn.dataset.price), req=parseInt(btn.dataset.req||0), pMap=JSON.parse(btn.dataset.pmap||'{}');
         if(curType==='內用'&&!curT){alert("請先選擇桌號");return;}
@@ -253,9 +249,6 @@ INDEX_HTML = """
 </body></html>
 """
 
-# ==========================================
-# 🏠 [老闆後台] (一鍵返回前台)
-# ==========================================
 BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
@@ -267,68 +260,56 @@ BOSS_HTML = """
     .btn{padding:12px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:8px;min-width:100px;}
     .cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}.reset{background:#95a5a6;color:#fff;font-size:12px;padding:5px 10px;}
     .print-btn { background: #3498db; color: #fff; position: absolute; top: 15px; right: 15px; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; border: none; }
-    
-    @media print {
-        body * { visibility: hidden; }
-        #print-area, #print-area * { visibility: visible; }
-        #print-area { position: absolute; left: 0; top: 0; width: 100%; font-size: 20px; line-height: 1.5; color: black; }
-        .no-print { display: none !important; }
-    }
+    @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { position: absolute; left: 0; top: 0; width: 100%; font-size: 20px; line-height: 1.5; color: black; } .no-print { display: none !important; } }
 </style>
 <script>
     function payAndPrint(id, m, loc, time, summary, price) {
-        if(m === 'RESET') {
-            fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload());
-            return;
-        }
+        if(m === 'RESET') { fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload()); return; }
         let printContent = `<div id="print-area"><div style="text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:10px;"><h2 style="margin:0;">晨食麵所 訂單</h2><p style="margin:5px 0;">${time}</p></div><div style="font-size:24px;font-weight:bold;margin-bottom:10px;">區域: ${loc}</div><div style="border-bottom:1px dashed #000;padding-bottom:10px;margin-bottom:10px;">${summary}</div><div style="text-align:right;font-size:24px;font-weight:bold;">總計: $${price}<br><small>(${m})</small></div></div>`;
         let old = document.getElementById('print-box'); if(old) old.remove();
         let div = document.createElement('div'); div.id = 'print-box'; div.innerHTML = printContent;
-        document.body.appendChild(div);
-        window.print();
-
-        fetch('/finish_order',{
-            method:'POST',
-            headers:{'Content-Type':'application/x-www-form-urlencoded'},
-            body:"id="+id+"&method="+m
-        }).then(()=>location.reload());
+        document.body.appendChild(div); window.print();
+        fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload());
     }
-
     function printOnly(loc, time, summary, price) {
         let printContent = `<div id="print-area"><div style="text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:10px;"><h2 style="margin:0;">晨食麵所 (補印)</h2><p style="margin:5px 0;">${time}</p></div><div style="font-size:24px;font-weight:bold;margin-bottom:10px;">區域: ${loc}</div><div style="border-bottom:1px dashed #000;padding-bottom:10px;margin-bottom:10px;">${summary}</div><div style="text-align:right;font-size:24px;font-weight:bold;">總計: $${price}</div></div>`;
         let old = document.getElementById('print-box'); if(old) old.remove();
         let div = document.createElement('div'); div.id = 'print-box'; div.innerHTML = printContent;
-        document.body.appendChild(div);
-        window.print();
+        document.body.appendChild(div); window.print();
     }
 </script></head>
 <body>
-    <div class="sticky-nav no-print">
-        <a href="/" class="nav-btn">⬅️ 一鍵返回「前台點餐」</a>
-    </div>
-    
-    <div class="no-print">
-        <h3>💰 今日總營收: ${{total}}</h3>
-    </div>
-
+    <div class="sticky-nav no-print"><a href="/" class="nav-btn">⬅️ 一鍵返回「前台點餐」</a></div>
+    <div class="no-print"><h3>💰 今日總營收: ${{total}}</h3></div>
 {% for h in logs %}
 <div class="o {{ 'done' if h.done else '' }}">
     <button class="print-btn no-print" onclick="printOnly('{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary|safe}}','{{h.price}}')">🖨️ 補印</button>
     <div><b>{{h.loc}}</b> | {{h.time.strftime('%H:%M:%S')}}</div>
     <div style="padding:8px 0;">{{h.summary|safe}}</div>
     <div style="font-size:18px;color:#e67e22;font-weight:bold;">${{h.price}}</div>
-    
     <div class="no-print" style="margin-top:10px">
         {% if not h.done %}
             <button class="btn cash" onclick="payAndPrint('{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary|safe}}','{{h.price}}')">💵 現金結帳</button>
             <button class="btn line" onclick="payAndPrint('{{h.id}}','LINE Pay','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary|safe}}','{{h.price}}')">📲 LINE Pay</button>
         {% else %}
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div style="color:green;font-weight:bold;">✅ 已收款 ({{h.pay}})</div>
-                <button class="btn reset" onclick="payAndPrint('{{h.id}}','RESET')">🔄 重設</button>
-            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div style="color:green;font-weight:bold;">✅ 已收款 ({{h.pay}})</div><button class="btn reset" onclick="payAndPrint('{{h.id}}','RESET')">🔄 重設</button></div>
         {% endif %}
     </div>
 </div>
 {% endfor %}
 </body></html>
+"""
+
+CART_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;}</style>
+<script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
+<body><h3>🛒 結帳明細 ({{loc}})</h3>{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br>${{i.price}}</div><button onclick="rm('{{i.id}}')">刪除</button></div>{% endfor %}
+<hr><h4>總計: ${{total}}</h4><form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;">確認送出訂單</button></form><br><a href="/" style="display:block;text-align:center;color:gray;text-decoration:none;">返回繼續加點</a></body></html>
+"""
+
+SUCCESS_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 3000)</script></head><body style="text-align:center;padding-top:100px;"><h1>✅ 訂單已送出</h1><p>請至櫃檯結帳</p></body></html>
+"""
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
