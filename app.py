@@ -4,26 +4,15 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v90_full"
+app.secret_key = "morning_noodle_v91_order_no"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
-# --- 設定區 ---
+# --- 核心邏輯與數據 ---
 BOSS_PASSWORD = "8888" 
 G_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe5HJ_rQDNaSXNo6l38DYMFErzna8Rmqjp8X61cgPZ2d8QOqA/formResponse"
 G_ENTRIES = {"summary": "entry.303092604", "price": "entry.157627510", "time": "entry.1541194223"}
 
-def sync_to_google(summary, price, info, pay_method):
-    tw_tz = pytz.timezone('Asia/Taipei')
-    time_str = datetime.datetime.now(tw_tz).strftime('%m/%d %H:%M:%S')
-    payload = {
-        G_ENTRIES["summary"]: summary.replace('<br>', ' | '),
-        G_ENTRIES["price"]: str(price),
-        G_ENTRIES["time"]: f"{time_str} ({info}-{pay_method})"
-    }
-    try: requests.post(G_URL, data=payload, timeout=0.8)
-    except: pass
-
-# --- 選單數據定義 ---
+# 菜單與設置 (承襲先前設定)
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
@@ -98,6 +87,7 @@ MENU_DATA = {
 }
 
 history = []
+order_counter = 1 # 全域編號計數器
 
 @app.before_request
 def ensure_session():
@@ -135,20 +125,26 @@ def view_cart():
 
 @app.route("/clear", methods=["POST"])
 def clear():
+    global order_counter
     cart = session.get('cart', [])
     if not cart: return redirect("/")
+    
     info = session.get('info', {"type": "外帶", "table": ""})
     t = sum(i['price'] for i in cart)
     loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
     summary = "<br>".join([f"{n} x{c}" for n,c in Counter([i['name'] for i in cart]).items()])
     
+    # 產生編號並儲存
+    my_no = order_counter
     history.append({
+        "no": my_no,
         "id": secrets.token_hex(4), "loc": loc, "type": info['type'], "price": t, "summary": summary, 
         "time": datetime.datetime.now(pytz.timezone('Asia/Taipei')), 
         "done": False, "pay": "未選"
     })
+    order_counter += 1
     session['cart'] = [] 
-    return render_template_string(SUCCESS_HTML)
+    return render_template_string(SUCCESS_HTML, order_no=my_no)
 
 @app.route("/boss")
 def boss():
@@ -156,7 +152,6 @@ def boss():
     if pw == BOSS_PASSWORD: session['is_boss'] = True
     if not session.get('is_boss'): return "<h3>權限不足</h3>", 403
     
-    # 統計數據 (已完成的訂單)
     done_orders = [h for h in history if h['done']]
     stats = {
         "money": sum(h['price'] for h in done_orders),
@@ -175,11 +170,13 @@ def finish_order():
         if method == "RESET": target['done'], target['pay'] = False, "未選"
         else:
             target['done'], target['pay'] = True, method
-            sync_to_google(target['summary'], target['price'], target['loc'], method)
+            # 同步時也加上編號
+            sync_to_google(f"#{target['no']} | {target['summary']}", target['price'], target['loc'], method)
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- 介面代碼 ---
+# --- 介面代碼 (核心部分) ---
+
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
@@ -265,14 +262,13 @@ BOSS_HTML = """
     }
 </style>
 <script>
-    function finish(id, m, loc, time, summary, price) {
+    function finish(no, id, m, loc, time, summary, price) {
         if(m==='RESET'){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload()); return; }
-        // 準備列印區塊
-        let p = `<div id="print-area"><h3>晨食麵所</h3><p>${time}</p><b>${loc}</b><hr>${summary}<hr><b>總計: $${price} (${m})</b><br><br>.</div>`;
+        // 列印區塊 (加上超大編號)
+        let p = `<div id="print-area"><h1 style="font-size:30px;margin:0;">#${no}</h1><p>${time}</p><b>${loc}</b><hr>${summary}<hr><b>總計: $${price} (${m})</b><br><br>.</div>`;
         let div = document.createElement('div'); div.innerHTML = p; document.body.appendChild(div);
         window.print();
         document.body.removeChild(div);
-        // 送出完成
         fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload());
     }
 </script></head>
@@ -283,15 +279,19 @@ BOSS_HTML = """
         <div class="stat-card" style="background:#5d4037">內用<br>{{stats.in}}</div><div class="stat-card" style="background:#5d4037">外帶<br>{{stats.out}}</div>
     </div>
     {% for h in logs %}<div class="o {{ 'done' if h.done else '' }}">
-        <div><b>{{h.loc}}</b> | {{h.time.strftime('%H:%M:%S')}}</div>
+        <div style="display:flex;justify-content:space-between">
+            <b style="font-size:20px;">#{{h.no}}</b>
+            <span>{{h.time.strftime('%H:%M')}}</span>
+        </div>
+        <div style="color:#5d4037;font-weight:bold;">{{h.loc}}</div>
         <div style="padding:5px 0;">{{h.summary|safe}}</div>
         <div style="font-size:18px;color:#e67e22;font-weight:bold;">${{h.price}}</div>
         <div class="no-print">
             {% if not h.done %}
-                <button class="btn cash" onclick="finish('{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M')}}','{{h.summary}}','{{h.price}}')">現金結帳/列印</button>
-                <button class="btn line" onclick="finish('{{h.id}}','L-Pay','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M')}}','{{h.summary}}','{{h.price}}')">L-Pay/列印</button>
+                <button class="btn cash" onclick="finish('{{h.no}}','{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M')}}','{{h.summary}}','{{h.price}}')">現金結帳/列印</button>
+                <button class="btn line" onclick="finish('{{h.no}}','{{h.id}}','L-Pay','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M')}}','{{h.summary}}','{{h.price}}')">L-Pay/列印</button>
             {% else %}
-                <span style="color:#2ecc71;">✅ {{h.pay}}已結</span> <button class="btn reset" onclick="finish('{{h.id}}','RESET')">重設</button>
+                <span style="color:#2ecc71;">✅ {{h.pay}}已結</span> <button class="btn reset" onclick="finish('{{h.no}}','{{h.id}}','RESET')">重設</button>
             {% endif %}
         </div>
     </div>{% endfor %}
@@ -305,7 +305,17 @@ CART_HTML = """
 """
 
 SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 2500)</script></head><body style="text-align:center;padding-top:100px;font-family:sans-serif;"><h1>✅ 訂單已送出</h1><p>請稍候，畫面將自動跳轉</p></body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 8000)</script></head>
+<body style="text-align:center;padding-top:80px;font-family:sans-serif;background:#fdfaf0;">
+    <h1 style="color:#2ecc71;font-size:40px;">✅ 訂單已送出</h1>
+    <div style="background:#fff;margin:20px;padding:30px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+        <p style="font-size:20px;margin:0;color:#666;">您的取餐編號為</p>
+        <h1 style="font-size:80px;margin:10px 0;color:#333;">#{{order_no}}</h1>
+        <p style="color:red;font-weight:bold;">請記住此編號或截圖，至櫃檯結帳</p>
+    </div>
+    <p style="color:gray;">(此畫面將在 8 秒後返回首頁)</p>
+    <a href="/" style="color:#ffbe00;text-decoration:none;font-weight:bold;">立即回首頁</a>
+</body></html>
 """
 
 if __name__ == "__main__":
