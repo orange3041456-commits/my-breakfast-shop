@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v51_fixed_options"
+app.secret_key = "morning_noodle_v52_boss_reset"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -24,7 +24,7 @@ def sync_to_google(summary, price, info, pay_method):
     except: pass
 
 # ==========================================
-# 🍱 [完整菜單資料整合 - 已修正配料與選項]
+# 🍱 [菜單資料保持不變]
 # ==========================================
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶", "換鮮奶茶"]
 DRINK_PRICE_MAP = {"換奶茶": 5, "換鮮奶茶": 15}
@@ -159,8 +159,11 @@ def finish_order():
     oid, method = request.form.get("id"), request.form.get("method")
     target = next((h for h in history if h['id'] == oid), None)
     if target:
-        target['done'], target['pay'] = True, method
-        sync_to_google(target['summary'], target['price'], target['loc'], method)
+        if method == "RESET":
+            target['done'], target['pay'] = False, "未選"
+        else:
+            target['done'], target['pay'] = True, method
+            sync_to_google(target['summary'], target['price'], target['loc'], method)
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
@@ -267,12 +270,12 @@ CART_HTML = """
 """
 
 BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;background:#eee;padding:15px;}.o{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #ffbe00;}.o.done{border-left-color:#2ecc71;opacity:0.7;}.btn{padding:10px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:5px;}.cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}</style>
-<script>function pay(id, m){ if(confirm('結帳方式: '+m+'?')){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload()) } }</script></head>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;background:#eee;padding:15px;}.o{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #ffbe00;}.o.done{border-left-color:#2ecc71;opacity:0.8;}.btn{padding:10px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:5px;}.cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}.reset{background:#95a5a6;color:#fff;font-size:12px;padding:5px 10px;}</style>
+<script>function pay(id, m){ if(confirm(m==='RESET'?'要重設付款狀態嗎？':'結帳方式: '+m+'?')){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload()) } }</script></head>
 <body><div style="display:flex;justify-content:space-between"><h3>💰 今日營收: ${{total}}</h3><button onclick="location.href='/'">快速點餐</button></div>
 {% for h in logs %}<div class="o {{ 'done' if h.done else '' }}"><div><b>{{h.loc}}</b> | {{h.time.strftime('%H:%M:%S')}}</div><div style="padding:8px 0;">{{h.summary|safe}}</div><div style="font-size:18px;color:#e67e22;font-weight:bold;">${{h.price}}</div>
 {% if not h.done %}<div style="margin-top:10px"><button class="btn cash" onclick="pay('{{h.id}}','現金')">現金</button><button class="btn line" onclick="pay('{{h.id}}','LINE Pay')">LINE Pay</button></div>
-{% else %}<div style="color:green;font-weight:bold;">✅ 已收款 ({{h.pay}})</div>{% endif %}</div>{% endfor %}</body></html>
+{% else %}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;"><div style="color:green;font-weight:bold;">✅ 已收款 ({{h.pay}})</div><button class="btn reset" onclick="pay('{{h.id}}','RESET')">🔄 重設</button></div>{% endif %}</div>{% endfor %}</body></html>
 """
 
 SUCCESS_HTML = """
