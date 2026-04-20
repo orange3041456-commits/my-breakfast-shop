@@ -5,7 +5,7 @@ from collections import Counter
 import json
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v29_final"
+app.secret_key = "morning_noodle_v30_stable"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -275,18 +275,28 @@ INDEX_HTML = """
     
     function buy(n,p,i,hasOpts,pMapStr){
         if(curType==='內用' && !curT){ alert("內用請先選擇桌號"); return; }
-        let fn=n, fp=p; let drinkSelected = false;
+        let fn=n, fp=p; 
+        let drinkSelected = false;
         let pMap = pMapStr ? JSON.parse(pMapStr) : {};
 
         Object.keys(opts).forEach(k=>{ 
             if(k.indexOf(i+'_')===0){ 
                 let optName = opts[k].n;
-                fn+='+'+optName; 
-                fp+=opts[k].p; 
-                if(pMap[optName]) fp += pMap[optName];
-                if(optName.indexOf('選') !== -1 || optName.indexOf('換') !== -1) drinkSelected = true; 
+                let optBasePrice = opts[k].p; 
+                
+                fn += '+' + optName; 
+                fp += optBasePrice; 
+                
+                // 套餐飲品加價邏輯修正
+                if(pMap[optName]) {
+                    fp += pMap[optName];
+                }
+                if(optName.indexOf('選') !== -1 || optName.indexOf('換') !== -1) {
+                    drinkSelected = true;
+                }
             } 
         });
+
         if(hasOpts > 0 && !drinkSelected){ alert("請務必選擇飲品"); return; }
         
         fetch('/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"name="+encodeURIComponent(fn)+"&price="+fp})
@@ -336,7 +346,6 @@ INDEX_HTML = """
                     {% if item.is_toast or item.is_jam or item.is_simple_toast %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">酥一點</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
                     
-                    {# 麵類配菜細項 #}
                     {% if item.is_noodle %}
                     <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不要配菜',0,this)" style="color:#d35400;font-weight:bold;">❌不要配菜</div>
                     <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加高麗菜',0,this)">不加高麗菜</div>
