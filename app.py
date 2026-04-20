@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v88_integrated_v2"
+app.secret_key = "morning_noodle_v88_full_flavors"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -53,12 +53,20 @@ MENU_DATA = {
         {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "add_meat": True},
         {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True}
     ],
-    "炒麵/炒泡麵系列": [
+    "泡麵系列 (2包)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}, 
         {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}
+    ],
+    "炒麵系列 (200g)": [
         {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": False, "sub": "【無肉絲】附基本配料"},
         {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": False, "sub": "【無肉絲】附基本配料"},
-        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}
+        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}, 
+        {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
+        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
         {"name": "巧克力吐司", "price": 25, "can_crispy": True, "can_no_crust": True}, {"name": "巧克力厚片", "price": 30, "can_crispy": True, "can_no_crust": True},
@@ -71,6 +79,8 @@ MENU_DATA = {
         {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
         {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
         {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
         {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB}, 
         {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB}
     ],
@@ -170,7 +180,7 @@ def finish_order():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- 模板區 ---
+# --- 模板 ---
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
@@ -183,23 +193,23 @@ INDEX_HTML = """
     .card { background: #fff; padding: 15px; margin: 10px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .row { display: flex; justify-content: space-between; align-items: center; }
     .add { background: #ffbe00; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; }
-    .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border-top: 1px dashed #eee; padding-top: 12px; }
-    .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 11px; text-align: center; cursor: pointer; }
+    .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; border-top: 1px dashed #eee; padding-top: 12px; }
+    .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 2px; border-radius: 8px; font-size: 11px; text-align: center; cursor: pointer; color:#555; }
     .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-    .boss-back { position: fixed; top: 10px; right: 10px; background: #e74c3c; color: #fff; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; z-index: 101; font-weight: bold; animation: blink 2s infinite; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .boss-back { position: fixed; top: 10px; right: 10px; background: #e74c3c; color: #fff; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; z-index: 101; font-weight: bold; animation: blink 2s infinite; }
     @keyframes blink { 50% { opacity: 0.6; } }
 </style>
 <script>
     let opts={}; let curT="{{session.info.table}}"; let curType="{{session.info.type}}";
     let pressTimer;
-    function startPress(){ pressTimer = window.setTimeout(() => { let p=prompt("請輸入密碼進入後台"); if(p) window.location.href='/boss?pw='+p; }, 3000); }
+    function startPress(){ pressTimer = window.setTimeout(() => { let p=prompt("後台密碼"); if(p) window.location.href='/boss?pw='+p; }, 3000); }
     function endPress(){ window.clearTimeout(pressTimer); }
-    function setT(t,b){curType=t;if(t==='外帶')curT='';fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
+    function setT(t,b){curType=t;if(t==='外帶')curT='';fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
     function buy(btn){
         let i=btn.dataset.id, n=btn.dataset.name, p=parseInt(btn.dataset.price), req=parseInt(btn.dataset.req||0), pMap=JSON.parse(btn.dataset.pmap||'{}');
-        if(curType==='內用'&&!curT){alert("請先選擇桌號");return;}
+        if(curType==='內用'&&!curT){alert("請選桌號");return;}
         let fn=n, fp=p, sel=0;
         Object.keys(opts).forEach(k=>{ if(k.startsWith(i+'_')){ let o=opts[k]; fn+='+'+o.n; fp+=o.p; if(pMap[o.n])fp+=pMap[o.n]; if(o.n.includes('選')||o.n.includes('換'))sel++; } });
         if(req>0){ if(n.includes("薯條OR雞塊")&&sel<2){alert("請選品項與飲品");return;} if(!n.includes("薯條OR雞塊")&&sel<1){alert("請選飲品");return;} }
@@ -233,9 +243,9 @@ INDEX_HTML = """
                 <div class="grid">
                     {% if item.can_add %}<div class="opt" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
                     {% if item.add_meat %}<div class="opt" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
-                    {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
+                    {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','加辣',0,this)">🌶️ 加辣</div>{% endif %}
                     {% if item.can_crispy %}<div class="opt" onclick="tgl('{{iid}}','酥一點',0,this)">🍞 酥一點</div>{% endif %}
-                    {% if item.can_no_crust %}<div class="opt" onclick="tgl('{{iid}}','去邊',0,this)">去邊</div>{% endif %}
+                    {% if item.can_no_crust %}<div class="opt" onclick="tgl('{{iid}}','去邊',0,this)">🍞 去邊</div>{% endif %}
                     {% if item.can_no_side %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','配料全不要',0,this)">🚫全不要</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加高麗菜',0,this)">❌高麗菜</div>
@@ -292,7 +302,7 @@ BOSS_HTML = """
                 <button class="btn cash" onclick="finish('{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary}}','{{h.price}}')">現金</button>
                 <button class="btn line" onclick="finish('{{h.id}}','LINE Pay','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary}}','{{h.price}}')">LINE Pay</button>
             {% else %}
-                <span style="color:#2ecc71;">✅ 已收單 ({{h.pay}})</span> <button class="btn reset" onclick="finish('{{h.id}}','RESET')">重設</button>
+                <span style="color:#2ecc71;">✅ 已結 ({{h.pay}})</span> <button class="btn reset" onclick="finish('{{h.id}}','RESET')">重設</button>
             {% endif %}
         </div>
     </div>{% endfor %}
@@ -306,7 +316,7 @@ CART_HTML = """
 """
 
 SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 3000)</script></head><body style="text-align:center;padding-top:100px;font-family:sans-serif;"><h1>✅ 訂單已送出</h1><p>請至櫃檯結帳，頁面將跳轉</p></body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 3000)</script></head><body style="text-align:center;padding-top:100px;font-family:sans-serif;"><h1>✅ 訂單已送出</h1><p>請至櫃檯結帳</p></body></html>
 """
 
 if __name__ == "__main__":
