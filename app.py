@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v92_order_no_fixed"
+app.secret_key = "morning_noodle_v93_custom_no_veg"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 核心參數 ---
@@ -12,11 +12,14 @@ BOSS_PASSWORD = "8888"
 G_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe5HJ_rQDNaSXNo6l38DYMFErzna8Rmqjp8X61cgPZ2d8QOqA/formResponse"
 G_ENTRIES = {"summary": "entry.303092604", "price": "entry.157627510", "time": "entry.1541194223"}
 
-# 菜單變數定義 (承接您的設定)
+# 菜單變數
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 TOAST_SUB = "✅含生菜、番茄、美乃滋"
+
+# 定義麵類專用的排除選項
+NO_VEG_OPTS = ["不要高麗菜", "不要紅蘿蔔", "不要肉絲", "不要蒜碎", "不要洋蔥", "不要蔥花", "不要玉米"]
 
 MENU_DATA = {
     "吃爽組合 (套餐)": [
@@ -43,19 +46,19 @@ MENU_DATA = {
         {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True}
     ],
     "泡麵系列 (2包)": [
-        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
-        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
-        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB}, 
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB},
+        {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB},
+        {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": False, "sub": "【無肉絲】附基本配料"},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": False, "sub": "【無肉絲】附基本配料"},
-        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB},
-        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "has_meat": True, "sub": NOODLE_SUB}
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB}, 
+        {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB},
+        {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_no_veg": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
         {"name": "巧克力吐司", "price": 25, "can_crispy": True, "can_no_crust": True}, {"name": "巧克力厚片", "price": 30, "can_crispy": True, "can_no_crust": True},
@@ -86,20 +89,8 @@ MENU_DATA = {
     ]
 }
 
-# --- 狀態變數 ---
 history = []
-order_counter = 1  # 初始編號
-
-def sync_to_google(summary, price, info, pay_method):
-    tw_tz = pytz.timezone('Asia/Taipei')
-    time_str = datetime.datetime.now(tw_tz).strftime('%m/%d %H:%M:%S')
-    payload = {
-        G_ENTRIES["summary"]: summary.replace('<br>', ' | '),
-        G_ENTRIES["price"]: str(price),
-        G_ENTRIES["time"]: f"{time_str} ({info}-{pay_method})"
-    }
-    try: requests.post(G_URL, data=payload, timeout=0.8)
-    except: pass
+order_counter = 1 
 
 @app.before_request
 def ensure_session():
@@ -109,7 +100,7 @@ def ensure_session():
 @app.route("/")
 def index():
     cart = session.get('cart', [])
-    return render_template_string(INDEX_HTML, menu=MENU_DATA, cart_len=len(cart), total=sum(i['price'] for i in cart), is_boss=session.get('is_boss'))
+    return render_template_string(INDEX_HTML, menu=MENU_DATA, no_veg_list=NO_VEG_OPTS, cart_len=len(cart), total=sum(i['price'] for i in cart))
 
 @app.route("/update_info", methods=["POST"])
 def update_info():
@@ -128,13 +119,6 @@ def del_item():
     session['cart'] = [i for i in session.get('cart', []) if i['id'] != request.form.get("id")]
     return jsonify({"status": "ok"})
 
-@app.route("/cart")
-def view_cart():
-    cart = session.get('cart', [])
-    info = session.get('info', {"type": "外帶", "table": ""})
-    loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
-    return render_template_string(CART_HTML, cart=cart, total=sum(i['price'] for i in cart), loc=loc)
-
 @app.route("/clear", methods=["POST"])
 def clear():
     global order_counter
@@ -142,35 +126,25 @@ def clear():
     if not cart: return redirect("/")
     
     info = session.get('info', {"type": "外帶", "table": ""})
-    total_price = sum(i['price'] for i in cart)
     loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
     summary = "<br>".join([f"{n} x{c}" for n,c in Counter([i['name'] for i in cart]).items()])
     
-    # 指派取餐編號
-    current_no = order_counter
+    my_no = order_counter
     history.append({
-        "no": current_no,
-        "id": secrets.token_hex(4), "loc": loc, "type": info['type'], "price": total_price, 
-        "summary": summary, "time": datetime.datetime.now(pytz.timezone('Asia/Taipei')), 
-        "done": False, "pay": "未選"
+        "no": my_no, "id": secrets.token_hex(4), "loc": loc, "type": info['type'], 
+        "price": sum(i['price'] for i in cart), "summary": summary, 
+        "time": datetime.datetime.now(pytz.timezone('Asia/Taipei')), "done": False, "pay": "未選"
     })
-    order_counter += 1 # 編號遞增
+    order_counter += 1
     session['cart'] = [] 
-    return render_template_string(SUCCESS_HTML, order_no=current_no)
+    return render_template_string(SUCCESS_HTML, order_no=my_no)
 
 @app.route("/boss")
 def boss():
-    pw = request.args.get("pw")
-    if pw == BOSS_PASSWORD: session['is_boss'] = True
+    if not session.get('is_boss') and request.args.get("pw") == BOSS_PASSWORD: session['is_boss'] = True
     if not session.get('is_boss'): return "<h3>權限不足</h3>", 403
-    
     done_orders = [h for h in history if h['done']]
-    stats = {
-        "money": sum(h['price'] for h in done_orders),
-        "total": len(done_orders),
-        "in": sum(1 for h in done_orders if h['type'] == "內用"),
-        "out": sum(1 for h in done_orders if h['type'] == "外帶")
-    }
+    stats = {"money": sum(h['price'] for h in done_orders), "total": len(done_orders)}
     return render_template_string(BOSS_HTML, stats=stats, logs=history[::-1])
 
 @app.route("/finish_order", methods=["POST"])
@@ -179,16 +153,12 @@ def finish_order():
     oid, method = request.form.get("id"), request.form.get("method")
     target = next((h for h in history if h['id'] == oid), None)
     if target:
-        if method == "RESET": 
-            target['done'], target['pay'] = False, "未選"
-        else:
-            target['done'], target['pay'] = True, method
-            # 同步時加上編號資訊
-            sync_to_google(f"[#{target['no']}] {target['summary']}", target['price'], target['loc'], method)
+        if method == "RESET": target['done'], target['pay'] = False, "未選"
+        else: target['done'], target['pay'] = True, method
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- 介面 HTML ---
+# --- 介面設計 ---
 
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
@@ -205,6 +175,8 @@ INDEX_HTML = """
     .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; border-top: 1px dashed #eee; padding-top: 12px; }
     .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 2px; border-radius: 8px; font-size: 11px; text-align: center; cursor: pointer; color:#555; }
     .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; }
+    .opt.no-veg { color: #e74c3c; border-color: #fbd9d6; }
+    .opt.no-veg.active { background: #e74c3c; color: #fff; }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
 </style>
 <script>
@@ -246,9 +218,9 @@ INDEX_HTML = """
                 <div class="grid">
                     {% if item.can_add %}<div class="opt" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
                     {% if item.add_meat %}<div class="opt" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
-                    {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','加辣',0,this)">🌶️ 加辣</div>{% endif %}
+                    {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">🌶️ 特製辣</div>{% endif %}
                     {% if item.can_no_crust %}<div class="opt" onclick="tgl('{{iid}}','去邊',0,this)">🍞 去邊</div>{% endif %}
-                    {% if item.can_no_side %}<div class="opt" style="color:red" onclick="tgl('{{iid}}','不加配料',0,this)">🚫不配料</div>{% endif %}
+                    {% if item.has_no_veg %}{% for v in no_veg_list %}<div class="opt no-veg" onclick="tgl('{{iid}}','{{v}}',0,this)">{{v}}</div>{% endfor %}{% endif %}
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}<div class="opt" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>{% endfor %}{% endfor %}{% endif %}
                 </div>
             </div>
@@ -262,23 +234,18 @@ BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
     body{font-family:sans-serif;background:#eee;padding:15px;}
-    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-    .stat-card { background: #333; color: #fff; padding: 15px; border-radius: 10px; text-align: center; }
     .o{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #ffbe00;}
-    .o.done{border-left-color:#2ecc71;opacity:0.7;}
     .btn{padding:10px 15px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-top:10px;}
-    .cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}.reset{background:#e74c3c;color:#fff;}
+    .cash{background:#2ecc71;color:#fff;}
     @media print { 
         body * { visibility: hidden; } 
         #print-area, #print-area * { visibility: visible; } 
-        #print-area { position: absolute; left: 0; top: 0; width: 54mm; font-size: 14px; color: #000; line-height: 1.2; } 
+        #print-area { position: absolute; left: 0; top: 0; width: 54mm; font-size: 14px; } 
     }
 </style>
 <script>
-    function finish(orderNo, id, m, loc, time, summary, price) {
-        if(m==='RESET'){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload()); return; }
-        // 列印區塊 (強調編號)
-        let p = `<div id="print-area"><h1 style="margin:0;font-size:32px;border-bottom:2px solid #000;">#${orderNo}</h1><p>${time}</p><b>${loc}</b><hr>${summary}<hr><b>總計: $${price} (${m})</b><br><br>.</div>`;
+    function finish(no, id, m, loc, time, summary, price) {
+        let p = `<div id="print-area"><h1 style="font-size:32px;margin:0;">#${no}</h1><p>${time}</p><b>${loc}</b><hr>${summary}<hr><b>總計: $${price}</b></div>`;
         let div = document.createElement('div'); div.innerHTML = p; document.body.appendChild(div);
         window.print();
         document.body.removeChild(div);
@@ -286,54 +253,24 @@ BOSS_HTML = """
     }
 </script></head>
 <body>
-    <div class="no-print" style="margin-bottom:10px;"><a href="/">⬅️ 返回前台</a></div>
-    <div class="stats-grid no-print">
-        <div class="stat-card">營收<br>${{stats.money}}</div><div class="stat-card">總單<br>{{stats.total}}</div>
-        <div class="stat-card" style="background:#5d4037">內用<br>{{stats.in}}</div><div class="stat-card" style="background:#5d4037">外帶<br>{{stats.out}}</div>
-    </div>
-    {% for h in logs %}<div class="o {{ 'done' if h.done else '' }}">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:24px;font-weight:bold;color:#333;">#{{h.no}}</span>
-            <span style="font-size:12px;color:gray;">{{h.time.strftime('%H:%M:%S')}}</span>
-        </div>
-        <div style="font-weight:bold;margin:5px 0;">{{h.loc}}</div>
-        <div style="padding:5px 0;border-top:1px dashed #eee;">{{h.summary|safe}}</div>
-        <div style="font-size:18px;color:#e67e22;font-weight:bold;">${{h.price}}</div>
-        <div class="no-print">
-            {% if not h.done %}
-                <button class="btn cash" onclick="finish('{{h.no}}','{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M')}}','{{h.summary}}','{{h.price}}')">現金結帳/印單</button>
-                <button class="btn line" onclick="finish('{{h.no}}','{{h.id}}','L-Pay','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M')}}','{{h.summary}}','{{h.price}}')">L-Pay/印單</button>
-            {% else %}
-                <span style="color:#2ecc71;">✅ {{h.pay}}已結</span> <button class="btn reset" onclick="finish('{{h.no}}','{{h.id}}','RESET')">重設</button>
-            {% endif %}
-        </div>
+    <div class="no-print"><a href="/">⬅️ 返回首頁</a> | 營收: ${{stats.money}} ({{stats.total}}單)</div>
+    {% for h in logs %}<div class="o">
+        <div style="display:flex;justify-content:space-between"><b>#{{h.no}}</b><span>{{h.time.strftime('%H:%M')}}</span></div>
+        <b>{{h.loc}}</b><br>{{h.summary|safe}}<br><b style="color:orange">${{h.price}}</b>
+        <div class="no-print">{% if not h.done %}<button class="btn cash" onclick="finish('{{h.no}}','{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%m/%d %H:%M')}}','{{h.summary}}','{{h.price}}')">完成/印單</button>{% else %}✅ 已完成{% endif %}</div>
     </div>{% endfor %}
 </body></html>
 """
 
-CART_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;}</style></head>
-<body><h3>🛒 訂單明細 ({{loc}})</h3>{% for i in cart %}<div class="item"><div><b>{{i.name}}</b><br>${{i.price}}</div><button onclick="fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id={{i.id}}'}).then(()=>location.reload())">刪除</button></div>{% endfor %}
-<hr><h4>總計: ${{total}}</h4><form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;font-size:16px;">確認送出訂單</button></form><br><a href="/" style="display:block;text-align:center;color:gray;text-decoration:none;">返回繼續加點</a></body></html>
-"""
-
+# (其餘 SUCCESS_HTML 與 SUCCESS 邏輯相同，僅微調文字)
 SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<script>setTimeout(()=>location.href='/', 10000)</script>
-<style>
-    body { text-align: center; padding: 50px 20px; font-family: sans-serif; background: #fdfaf0; }
-    .card { background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-    .no { font-size: 80px; font-weight: bold; color: #ffbe00; margin: 20px 0; }
-    .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #ffbe00; color: #000; text-decoration: none; border-radius: 20px; font-weight: bold; }
-</style></head>
-<body>
-    <div class="card">
-        <h2 style="color:#2ecc71;">✅ 訂單已成功送出</h2>
-        <p>您的取餐編號為</p>
-        <div class="no">#{{order_no}}</div>
-        <p>請記住此編號，並至櫃檯結帳取餐</p>
-        <p style="font-size:12px;color:gray;">(此畫面將在 10 秒後自動返回首頁)</p>
-        <a href="/" class="btn">立即回首頁</a>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 8000)</script></head>
+<body style="text-align:center;padding-top:50px;font-family:sans-serif;background:#fdfaf0;">
+    <div style="background:#fff;margin:20px;padding:30px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+        <h2 style="color:#2ecc71;">✅ 訂單已送出</h2>
+        <p>您的取餐編號</p>
+        <h1 style="font-size:80px;margin:10px 0;">#{{order_no}}</h1>
+        <p style="color:red;font-weight:bold;">請記住編號並至櫃檯結帳</p>
     </div>
 </body></html>
 """
