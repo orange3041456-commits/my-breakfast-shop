@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_final_v1"
+app.secret_key = "morning_noodle_v80_fixed"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -169,7 +169,7 @@ def finish_order():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- 前台 HTML ---
+# --- 頁面 HTML ---
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
@@ -229,15 +229,24 @@ INDEX_HTML = """
                     {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
                     {% if item.can_crispy %}<div class="opt" onclick="tgl('{{iid}}','酥一點',0,this)">🍞 酥一點</div>{% endif %}
                     {% if item.can_no_crust %}<div class="opt" onclick="tgl('{{iid}}','去邊',0,this)">🍞 去邊</div>{% endif %}
+                    
                     {% if item.can_no_side %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加高麗菜',0,this)">❌高麗菜</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加肉絲',0,this)">❌肉絲</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加蒜碎',0,this)">❌蒜碎</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加洋蔥',0,this)">❌洋蔥</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加蔥花',0,this)">❌蔥花</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加玉米',0,this)">❌玉米</div>
                     {% endif %}
+                    
                     {% if item.can_no_veg %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','都不要菜',0,this)">❌都不要菜</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌生菜</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌番茄</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加美乃滋',0,this)">❌美乃滋</div>
                     {% endif %}
+                    
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
                         <div class="opt" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>
                     {% endfor %}{% endfor %}{% endif %}
@@ -249,7 +258,6 @@ INDEX_HTML = """
 </body></html>
 """
 
-# --- 管理後台 HTML ---
 BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
@@ -286,7 +294,6 @@ BOSS_HTML = """
 </body></html>
 """
 
-# --- 購物車與成功頁面 ---
 CART_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;}</style>
 <script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
