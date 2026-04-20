@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v95_v3"
+app.secret_key = "morning_noodle_v95_final_v2"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -12,7 +12,6 @@ BOSS_PASSWORD = "8888"
 G_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe5HJ_rQDNaSXNo6l38DYMFErzna8Rmqjp8X61cgPZ2d8QOqA/formResponse"
 G_ENTRIES = {"summary": "entry.303092604", "price": "entry.157627510", "time": "entry.1541194223"}
 
-# 全域訂單計數器
 order_counter = 1
 
 def sync_to_google(summary, price, info, pay_method):
@@ -26,10 +25,12 @@ def sync_to_google(summary, price, info, pay_method):
     try: requests.post(G_URL, data=payload, timeout=0.8)
     except: pass
 
-# --- 選單數據 (略，保持一致) ---
+# --- 選單數據 ---
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
+# 針對無肉絲麵種的配料說明
+NO_MEAT_NOODLE_SUB = "【無肉絲】配料：高麗菜、紅蘿蔔、蒜碎、洋蔥、蔥花、玉米"
 TOAST_SUB = "✅含生菜、番茄、美乃滋"
 EXCLUDE_VEG_OPTS = ["不要高麗菜", "不要紅蘿蔔", "不要肉絲", "不要蒜碎", "不要洋蔥", "不要蔥花", "不要玉米"]
 
@@ -59,17 +60,17 @@ MENU_DATA = {
     ],
     "泡麵系列 (2包)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒泡麵", "price": 80, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣炒泡麵", "price": 85, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": "【無肉絲】附基本配料"},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NO_MEAT_NOODLE_SUB},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "sub": NO_MEAT_NOODLE_SUB},
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒麵", "price": 80, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣起司炒麵", "price": 85, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
@@ -153,7 +154,7 @@ def clear():
     history.append({
         "no": current_no, "id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, 
         "time": datetime.datetime.now(pytz.timezone('Asia/Taipei')), 
-        "done": False, "pay": "未選", "type": info['type'] # 紀錄內用或外帶
+        "done": False, "pay": "未選", "type": info['type']
     })
     order_counter += 1
     session['cart'] = [] 
@@ -165,18 +166,11 @@ def boss():
     if pw == BOSS_PASSWORD: session['is_boss'] = True
     if not session.get('is_boss'): return "<h3>權限不足</h3>", 403
     
-    # 計算來客數統計 (僅計算已完成或全部，此處計算全部訂單)
     total_money = sum(h['price'] for h in history if h['done'])
-    total_count = len(history)
     dine_in_count = sum(1 for h in history if h['type'] == '內用')
     take_out_count = sum(1 for h in history if h['type'] == '外帶')
     
-    stats = {
-        "total_money": total_money, 
-        "total_count": total_count,
-        "dine_in": dine_in_count,
-        "take_out": take_out_count
-    }
+    stats = {"total_money": total_money, "total_count": len(history), "dine_in": dine_in_count, "take_out": take_out_count}
     return render_template_string(BOSS_HTML, stats=stats, logs=history[::-1])
 
 @app.route("/boss_logout")
@@ -298,14 +292,12 @@ BOSS_HTML = """
 </script></head>
 <body>
     <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><a href="/">⬅️ 前台</a><a href="/boss_logout" style="color:red;">登出</a></div>
-    
     <div class="stat-bar">
         <div class="stat-item">今日營收<b>${{stats.total_money}}</b></div>
         <div class="stat-item">總單數<b>{{stats.total_count}}</b></div>
         <div class="stat-item">內用<b>{{stats.dine_in}}</b></div>
         <div class="stat-item">外帶<b>{{stats.take_out}}</b></div>
     </div>
-
     {% for h in logs %}<div class="o {{ 'done' if h.done else '' }}">
         <div style="display:flex;justify-content:space-between"><b>#{{h.no}} | {{h.loc}}</b><span>{{h.time.strftime('%H:%M')}}</span></div>
         <div style="padding:5px 0;">{{h.summary|safe}}</div>
