@@ -2,10 +2,9 @@ from flask import Flask, render_template_string, request, jsonify, session, redi
 import os, secrets, requests, datetime
 import pytz
 from collections import Counter
-import json
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v37_full_menu"
+app.secret_key = "morning_noodle_v40_final_pro"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 後台密碼 ---
@@ -29,7 +28,7 @@ def sync_to_google(summary, price, info, pay_method="現金"):
     except: pass
 
 # ==========================================
-# 🍱 [完整菜單資料資料庫]
+# 🍱 [完整菜單資料]
 # ==========================================
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶", "換鮮奶茶"]
 DRINK_PRICE_MAP = {"換奶茶": 5, "換鮮奶茶": 15}
@@ -44,20 +43,20 @@ MENU_DATA = {
         {"name": "巧克力薯餅吐司+飲品", "price": 50, "can_add": True, "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP}
     ],
     "蛋餅類": [
-        {"name": "原味蛋餅", "price": 30, "can_add": True, "add_meat": True, "can_spicy": True}, 
-        {"name": "蔥香蛋餅", "price": 35, "can_add": True, "add_meat": True, "can_spicy": True}, 
-        {"name": "肉鬆蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True}, 
-        {"name": "起司蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "蔬菜蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "火腿蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "香煎培根蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "熱狗蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "塔香蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "玉米蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True, "can_spicy": True}
+        {"name": "原味蛋餅", "price": 30, "can_add": True, "add_meat": True}, 
+        {"name": "蔥香蛋餅", "price": 35, "can_add": True, "add_meat": True}, 
+        {"name": "肉鬆蛋餅", "price": 40, "can_add": True, "add_meat": True}, 
+        {"name": "起司蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "蔬菜蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "火腿蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "香煎培根蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "熱狗蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "塔香蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "玉米蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True, "add_meat": True},
+        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "add_meat": True},
+        {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "add_meat": True},
+        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True}
     ],
     "泡麵系列 (2包)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB}, 
@@ -81,14 +80,14 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "can_no_side": True, "sub": "✅含生菜、番茄"},
-        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "can_no_side": True, "sub": "✅含生菜、番茄"},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "can_no_side": True, "sub": "✅含生菜、番茄"},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "can_no_side": True, "sub": "✅含生菜、番茄"},
-        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "can_no_side": True, "sub": "✅含生菜、番茄"},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "can_no_side": True, "sub": "✅含生菜、番茄"}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "can_no_side": True, "sub": "✅含生菜、番茄"}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_crispy": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}
     ],
     "飲品 (L)": [
         {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, 
@@ -161,12 +160,16 @@ def finish_order():
     oid, method = request.form.get("id"), request.form.get("method", "現金")
     target = next((h for h in history if h['id'] == oid), None)
     if target:
-        sync_to_google(target['summary'], target['price'], target['loc'], method)
-        target['done'], target['pay'] = True, method
+        if method == "RESET":
+            target['done'], target['pay'] = False, "未選"
+        else:
+            sync_to_google(target['summary'], target['price'], target['loc'], method)
+            target['done'], target['pay'] = True, method
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- [ INDEX_HTML ] ---
+# --- [ HTML 範本區塊 ] ---
+
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
@@ -237,21 +240,21 @@ INDEX_HTML = """
                     {% if item.add_meat %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
                     {% if item.can_crispy %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','酥一點',0,this)">酥一點</div>{% endif %}
-                    {% if item.can_no_veg %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加生菜',0,this)">不加生菜</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加番茄',0,this)">不加番茄</div>{% endif %}
-                    
-                    {% if item.can_no_side %}
+                    {% if item.can_no_veg %}
                         <div class="opt no-side" data-item="{{iid}}" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
-                        {% if '系列' in cat %} {# 泡麵/炒麵專用配料 #}
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加高麗菜',0,this)">不加高麗菜</div>
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加紅蘿蔔',0,this)">不加紅蘿蔔</div>
-                            {% if not item.no_meat_opt %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加肉絲',0,this)">不加肉絲</div>{% endif %}
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蒜碎',0,this)">不加蒜碎</div>
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加洋蔥',0,this)">不加洋蔥</div>
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蔥花',0,this)">不加蔥花</div>
-                            <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加玉米',0,this)">不加玉米</div>
-                        {% endif %}
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加生菜',0,this)">不加生菜</div>
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加番茄',0,this)">不加番茄</div>
                     {% endif %}
-
+                    {% if '系列' in cat and item.can_no_side %}
+                        <div class="opt no-side" data-item="{{iid}}" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加高麗菜',0,this)">不加高麗菜</div>
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加紅蘿蔔',0,this)">不加紅蘿蔔</div>
+                        {% if not item.no_meat_opt %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加肉絲',0,this)">不加肉絲</div>{% endif %}
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蒜碎',0,this)">不加蒜碎</div>
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加洋蔥',0,this)">不加洋蔥</div>
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蔥花',0,this)">不加蔥花</div>
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加玉米',0,this)">不加玉米</div>
+                    {% endif %}
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
                         {% set ex = item.price_map.get(o, 0) if item.price_map else 0 %}
                         <div class="opt" data-item="{{iid}}" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}{% if ex>0 %}+{{ex}}{% endif %}</div>
@@ -264,6 +267,46 @@ INDEX_HTML = """
 </body></html>
 """
 
+BOSS_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+    body { font-family: sans-serif; padding: 15px; background: #eee; }
+    .o { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 10px; position: relative; border-left: 8px solid #ffbe00; }
+    .o.done { border-left: 8px solid #2ecc71; opacity: 0.8; }
+    .pay-btn { padding: 10px 15px; margin: 5px 5px 0 0; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    .cash { background: #2ecc71; color: #fff; }
+    .line { background: #00b900; color: #fff; }
+    .reset { background: #e74c3c; color: #fff; font-size: 12px; padding: 5px 10px; margin-top: 10px; display: inline-block; border-radius: 4px; cursor: pointer; }
+</style>
+<script>
+    function finish(id, m){ if(confirm('確定支付方式為 '+m+'?')){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload()) } }
+    function reset(id){ if(confirm('確定要重置這張訂單嗎？')){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload()) } }
+</script></head>
+<body>
+    <div style="display:flex; justify-content: space-between; align-items:center">
+        <h2>💰 今日營收: ${{total}}</h2>
+        <button onclick="window.location.href='/'">回首頁</button>
+    </div>
+    {% for h in logs %}
+    <div class="o {{ 'done' if h.done else '' }}">
+        <div style="font-size:14px; color: #666;">{{h.time.strftime('%H:%M:%S')}} | <b>{{h.loc}}</b></div>
+        <div style="margin: 10px 0;">{{h.summary|safe}}</div>
+        <div style="font-size:18px; font-weight:bold; color:#e67e22;">總計: ${{h.price}}</div>
+        
+        {% if not h.done %}
+            <div style="margin-top:10px;">
+                <button class="pay-btn cash" onclick="finish('{{h.id}}','現金')">💵 現金</button>
+                <button class="pay-btn line" onclick="finish('{{h.id}}','LINE Pay')">📱 LINE Pay</button>
+            </div>
+        {% else %}
+            <div style="color:#27ae60; font-weight:bold; margin-top:5px;">✅ 已收款 ({{h.pay}})</div>
+            <div class="reset" onclick="reset('{{h.id}}')">↩️ 按錯了 (重設訂單)</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</body></html>
+"""
+
 CART_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;}</style>
 <script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
@@ -272,15 +315,6 @@ CART_HTML = """
 <hr><h4>總計: ${{total}}</h4>
 <form action="/clear" method="POST"><button type="submit" style="width:100%;background:#ffbe00;padding:15px;border:none;border-radius:10px;font-weight:bold;">確認送出訂單</button></form>
 <br><a href="/" style="display:block;text-align:center;color:gray;text-decoration:none;">返回繼續加點</a></body></html>
-"""
-
-BOSS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;padding:15px;}.o{background:#fff;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);border-left:8px solid #ffbe00;}</style>
-<script>function finish(id, m){fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload())}</script></head>
-<body><h2>總額: ${{total}}</h2><button onclick="window.location.href='/'">回首頁</button>
-{% for h in logs %}<div class="o"><b>{{h.loc}}</b> ({{h.time.strftime('%H:%M:%S')}})<p>{{h.summary|safe}}</p><b>${{h.price}}</b>
-{% if not h.done %}<button onclick="finish('{{h.id}}','現金')">現金</button><button onclick="finish('{{h.id}}','LINE Pay')">LINE Pay</button>{% else %} [{{h.pay}}已付]{% endif %}</div>{% endfor %}
-</body></html>
 """
 
 SUCCESS_HTML = """
