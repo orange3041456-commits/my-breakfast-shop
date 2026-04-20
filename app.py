@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v68_full_options"
+app.secret_key = "morning_noodle_v69_toast_fix"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -168,7 +168,7 @@ def finish_order():
     return jsonify({"status": "error"}), 404
 
 # ==========================================
-# 📱 [前台頁面] (含完整的配料選項)
+# 📱 [前台頁面] 
 # ==========================================
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
@@ -245,7 +245,8 @@ INDEX_HTML = """
 
                     {% if item.can_no_veg %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','生菜番茄不要',0,this)">❌生菜番茄</div>
-                        <div class="opt" onclick="tgl('{{iid}}','不加洋蔥',0,this)">❌洋蔥</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌生菜</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌番茄</div>
                     {% endif %}
 
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
