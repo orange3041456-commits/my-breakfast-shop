@@ -2,9 +2,10 @@ from flask import Flask, render_template_string, request, jsonify, session, redi
 import os, secrets, requests, datetime
 import pytz
 from collections import Counter
+import json
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v24_final"
+app.secret_key = "morning_noodle_v25_final"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -37,13 +38,41 @@ def sync_to_google(summary, price, info, pay_method="現金"):
 # Menu Data
 # ==========================================
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
+DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶", "換鮮奶茶"]
+DRINK_PRICE_MAP = {"換奶茶": 5, "換鮮奶茶": 15}
+
 MENU_DATA = {
     "吃爽組合 (套餐)": [
-        {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "請務必選擇品項與飲料", "opts": [["選薯條", "選雞塊"], ["選紅茶", "選冷泡茶"]]},
+        {
+            "name": "薯條OR雞塊+飲品", 
+            "price": 60, 
+            "sub": "請務必選擇品項與飲品", 
+            "opts": [["選薯條", "選雞塊"], DRINK_OPTS],
+            "price_map": DRINK_PRICE_MAP
+        },
         {"name": "肉蛋吐司+紅茶", "price": 60},
-        {"name": "熱狗(3支)+蛋+飲品", "price": 50, "opts": [["選紅茶", "選冷泡茶"]]},
-        {"name": "草莓肉鬆吐司+飲品", "price": 50, "sub": "🍓 鹹甜推薦", "can_add": True, "opts": [["選紅茶", "選冷泡茶"]]},
-        {"name": "巧克力薯餅吐司+飲品", "price": 50, "sub": "🍫 酥脆組合", "can_add": True, "opts": [["選紅茶", "選冷泡茶"]]}
+        {
+            "name": "熱狗(3支)+蛋+飲品", 
+            "price": 50, 
+            "opts": [DRINK_OPTS],
+            "price_map": DRINK_PRICE_MAP
+        },
+        {
+            "name": "草莓肉鬆吐司+飲品", 
+            "price": 50, 
+            "sub": "🍓 鹹甜推薦", 
+            "can_add": True, 
+            "opts": [DRINK_OPTS],
+            "price_map": DRINK_PRICE_MAP
+        },
+        {
+            "name": "巧克力薯餅吐司+飲品", 
+            "price": 50, 
+            "sub": "🍫 酥脆組合", 
+            "can_add": True, 
+            "opts": [DRINK_OPTS],
+            "price_map": DRINK_PRICE_MAP
+        }
     ],
     "蛋餅類": [
         {"name": "原味蛋餅", "price": 30, "can_add": True, "add_meat": True}, 
@@ -244,13 +273,18 @@ INDEX_HTML = """
     function setT(t,b){curType=t;if(t==='外帶') { curT=''; }fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type="+t+"&table="+curT});document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('ts').style.display=(t==='內用')?'block':'none'}
     function setN(n,b){curT=n;fetch('/update_info',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"type=內用&table="+n});document.querySelectorAll('.table-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
     
-    function buy(n,p,i,hasOpts){
+    function buy(n,p,i,hasOpts,pMapStr){
         if(curType==='內用' && !curT){ alert("內用請先選擇桌號"); return; }
         let fn=n, fp=p; let drinkSelected = false;
+        let pMap = pMapStr ? JSON.parse(pMapStr) : {};
+
         Object.keys(opts).forEach(k=>{ 
             if(k.indexOf(i+'_')===0){ 
-                fn+='+'+opts[k].n; fp+=opts[k].p; 
-                if(opts[k].n.indexOf('選') !== -1) drinkSelected = true; 
+                let optName = opts[k].n;
+                fn+='+'+optName; 
+                fp+=opts[k].p; 
+                if(pMap[optName]) fp += pMap[optName];
+                if(optName.indexOf('選') !== -1 || optName.indexOf('換') !== -1) drinkSelected = true; 
             } 
         });
         if(hasOpts > 0 && !drinkSelected){ alert("請務必選擇飲品"); return; }
@@ -293,7 +327,7 @@ INDEX_HTML = """
             <div class="card">
                 <div class="row">
                     <div style="flex:1"><strong>{{item.name}}</strong>{% if item.sub %}<div class="sub-info">{{item.sub}}</div>{% endif %}<div class="price">${{item.price}}</div></div>
-                    <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}',{{has_opts}})">加入</button>
+                    <button class="add" onclick="buy('{{item.name}}',{{item.price}},'{{iid}}',{{has_opts}},'{{item.price_map|tojson if item.price_map else '{}'}}')">加入</button>
                 </div>
                 <div class="grid">
                     {% if item.can_add %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
