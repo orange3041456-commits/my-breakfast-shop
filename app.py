@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v55_toggle_logic"
+app.secret_key = "morning_noodle_v56_final_list"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -24,7 +24,7 @@ def sync_to_google(summary, price, info, pay_method):
     except: pass
 
 # ==========================================
-# 🍱 [菜單資料]
+# 🍱 [完整菜單資料更新]
 # ==========================================
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
@@ -69,15 +69,28 @@ MENU_DATA = {
         {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB},
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB}
     ],
+    "果醬吐司/厚片": [
+        {"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30},
+        {"name": "草莓吐司", "price": 25}, {"name": "草莓厚片", "price": 30},
+        {"name": "花生吐司", "price": 25}, {"name": "花生厚片", "price": 30},
+        {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}
+    ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_crispy": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}
     ],
     "單點小點": [
-        {"name": "荷包蛋", "price": 15}, {"name": "熱狗(3支)", "price": 20},
-        {"name": "小肉豆", "price": 40}, {"name": "美式脆條", "price": 45}
+        {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
+        {"name": "熱狗(3支)", "price": 20}, {"name": "蔥蛋", "price": 25},
+        {"name": "薯餅", "price": 25}, {"name": "麥克雞塊", "price": 45},
+        {"name": "小肉豆", "price": 40}, {"name": "美式脆條", "price": 45},
+        {"name": "雞柳條", "price": 50}, {"name": "黃金蝦排", "price": 35}
     ],
     "飲品 (L)": [
         {"name": "紅茶", "price": 25}, {"name": "香醇奶茶", "price": 30}, 
@@ -154,7 +167,7 @@ def finish_order():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- HTML 模板 ---
+# --- 前台介面 ---
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
@@ -170,12 +183,13 @@ INDEX_HTML = """
     .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border-top: 1px dashed #eee; padding-top: 12px; }
     .opt { background: #fcfcfc; border: 1.5px solid #eee; padding: 8px 3px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; }
     .opt.active { background: #5d4037; color: #fff; border-color: #5d4037; }
+    .opt.no-side { border-color: #e74c3c; color: #e74c3c; font-weight: bold; }
+    .opt.no-side.active { background: #e74c3c; color: #fff; }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
 </style>
 <script>
     let opts={}; let curT="{{session.info.table}}"; let curType="{{session.info.type}}";
     let timer;
-    // 長按 3 秒標題回後台
     function startP(){ timer = setTimeout(() => { window.location.href='/boss?pw=8888'; }, 3000); }
     function endP(){ clearTimeout(timer); }
 
@@ -216,7 +230,26 @@ INDEX_HTML = """
                 </div>
                 <div class="grid">
                     {% if item.can_add %}<div class="opt" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
+                    {% if item.add_meat %}<div class="opt" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
+
+                    {% if item.can_no_side %}
+                        <div class="opt no-side" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加高麗菜',0,this)">❌高麗菜</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加紅蘿蔔',0,this)">❌紅蘿蔔</div>
+                        {% if not item.no_meat_opt %}<div class="opt" onclick="tgl('{{iid}}','不加肉絲',0,this)">❌肉絲</div>{% endif %}
+                        <div class="opt" onclick="tgl('{{iid}}','不加蒜碎',0,this)">❌蒜碎</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加洋蔥',0,this)">❌洋蔥</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加蔥花',0,this)">❌蔥花</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加玉米',0,this)">❌玉米</div>
+                    {% endif %}
+
+                    {% if item.can_no_veg %}
+                        <div class="opt no-side" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌生菜</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌番茄</div>
+                    {% endif %}
+
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
                         <div class="opt" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>
                     {% endfor %}{% endfor %}{% endif %}
@@ -228,20 +261,18 @@ INDEX_HTML = """
 </body></html>
 """
 
+# --- 老闆後台 ---
 BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
     body{font-family:sans-serif;background:#eee;padding:15px;}
-    .nav-bar { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px; }
-    .nav-btn { background: #333; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none; font-size: 14px; }
+    .nav-btn { display: block; background: #333; color: #fff; text-align: center; padding: 15px; border-radius: 10px; font-weight: bold; text-decoration: none; margin-bottom: 20px; }
     .o{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #ffbe00;}.o.done{border-left-color:#2ecc71;opacity:0.8;}
     .btn{padding:10px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:5px;}.cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}.reset{background:#95a5a6;color:#fff;font-size:12px;padding:5px 10px;}
 </style>
 <script>function pay(id, m){ if(confirm(m==='RESET'?'要重設付款狀態嗎？':'結帳方式: '+m+'?')){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload()) } }</script></head>
 <body>
-    <div class="nav-bar">
-        <a href="/" class="nav-btn">⬅️ 返回前台點餐</a>
-    </div>
+    <a href="/" class="nav-btn">⬅️ 返回前台點餐介面</a>
     <div style="display:flex;justify-content:space-between;align-items:center;">
         <h3>💰 今日營收: ${{total}}</h3>
     </div>
@@ -250,7 +281,6 @@ BOSS_HTML = """
 {% else %}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;"><div style="color:green;font-weight:bold;">✅ 已收款 ({{h.pay}})</div><button class="btn reset" onclick="pay('{{h.id}}','RESET')">🔄 重設</button></div>{% endif %}</div>{% endfor %}</body></html>
 """
 
-# [其餘 CART_HTML, SUCCESS_HTML 保持不變]
 CART_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;}</style>
 <script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
