@@ -5,6 +5,7 @@ from collections import Counter
 
 app = Flask(__name__)
 app.secret_key = "morning_noodle_v71_mayo_tag"
+
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
