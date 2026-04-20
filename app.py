@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v57_toast_crispy"
+app.secret_key = "morning_noodle_final_v58"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -24,7 +24,7 @@ def sync_to_google(summary, price, info, pay_method):
     except: pass
 
 # ==========================================
-# 🍱 [菜單資料 - 已加入「酥一點」邏輯]
+# 🍱 [菜單資料]
 # ==========================================
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
@@ -167,7 +167,9 @@ def finish_order():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- HTML 模板 (前台) ---
+# ==========================================
+# 📱 [前台頁面] - 隱藏入口回後台
+# ==========================================
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
@@ -190,6 +192,7 @@ INDEX_HTML = """
 <script>
     let opts={}; let curT="{{session.info.table}}"; let curType="{{session.info.type}}";
     let timer;
+    // 長按 3 秒標題回後台
     function startP(){ timer = setTimeout(() => { window.location.href='/boss?pw=8888'; }, 3000); }
     function endP(){ clearTimeout(timer); }
 
@@ -262,26 +265,34 @@ INDEX_HTML = """
 </body></html>
 """
 
-# --- 後台與其餘頁面 ---
+# ==========================================
+# 🏠 [老闆後台] - 固定切換前台按鈕
+# ==========================================
 BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
-    body{font-family:sans-serif;background:#eee;padding:15px;}
-    .nav-btn { display: block; background: #333; color: #fff; text-align: center; padding: 15px; border-radius: 10px; font-weight: bold; text-decoration: none; margin-bottom: 20px; }
+    body{font-family:sans-serif;background:#eee;padding:15px;margin-top:70px;} /* 預留上方空間給固定按鈕 */
+    .sticky-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #333; padding: 10px 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .nav-btn { display: block; background: #ffbe00; color: #000; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; text-decoration: none; }
     .o{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #ffbe00;}.o.done{border-left-color:#2ecc71;opacity:0.8;}
     .btn{padding:10px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:5px;}.cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}.reset{background:#95a5a6;color:#fff;font-size:12px;padding:5px 10px;}
 </style>
 <script>function pay(id, m){ if(confirm(m==='RESET'?'要重設付款狀態嗎？':'結帳方式: '+m+'?')){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload()) } }</script></head>
 <body>
-    <a href="/" class="nav-btn">⬅️ 返回前台點餐介面</a>
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-        <h3>💰 今日營收: ${{total}}</h3>
+    <div class="sticky-nav">
+        <a href="/" class="nav-btn">🏠 返回前台 (客人點餐)</a>
     </div>
+    
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3>💰 今日總營收: ${{total}}</h3>
+    </div>
+
 {% for h in logs %}<div class="o {{ 'done' if h.done else '' }}"><div><b>{{h.loc}}</b> | {{h.time.strftime('%H:%M:%S')}}</div><div style="padding:8px 0;">{{h.summary|safe}}</div><div style="font-size:18px;color:#e67e22;font-weight:bold;">${{h.price}}</div>
 {% if not h.done %}<div style="margin-top:10px"><button class="btn cash" onclick="pay('{{h.id}}','現金')">現金</button><button class="btn line" onclick="pay('{{h.id}}','LINE Pay')">LINE Pay</button></div>
 {% else %}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;"><div style="color:green;font-weight:bold;">✅ 已收款 ({{h.pay}})</div><button class="btn reset" onclick="pay('{{h.id}}','RESET')">🔄 重設</button></div>{% endif %}</div>{% endfor %}</body></html>
 """
 
+# [其餘明細頁面保持不變]
 CART_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>body{font-family:sans-serif;padding:20px;background:#fdfaf0;}.item{background:#fff;padding:15px;margin-bottom:10px;border-radius:10px;display:flex;justify-content:space-between;}</style>
 <script>function rm(id){fetch('/del_item',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id}).then(()=>location.reload())}</script></head>
