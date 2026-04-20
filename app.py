@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v67_fixed_options"
+app.secret_key = "morning_noodle_v68_full_options"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -168,7 +168,7 @@ def finish_order():
     return jsonify({"status": "error"}), 404
 
 # ==========================================
-# 📱 [前台頁面] (長按標題進後台)
+# 📱 [前台頁面] (含完整的配料選項)
 # ==========================================
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
@@ -238,6 +238,9 @@ INDEX_HTML = """
                         <div class="opt" onclick="tgl('{{iid}}','不加紅蘿蔔',0,this)">❌紅蘿蔔</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加肉絲',0,this)">❌肉絲</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加蒜碎',0,this)">❌蒜碎</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加洋蔥',0,this)">❌洋蔥</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加蔥花',0,this)">❌蔥花</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加玉米',0,this)">❌玉米</div>
                     {% endif %}
 
                     {% if item.can_no_veg %}
