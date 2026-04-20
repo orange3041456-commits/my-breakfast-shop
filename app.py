@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v69_toast_fix"
+app.secret_key = "morning_noodle_v70_final_veg"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -244,9 +244,9 @@ INDEX_HTML = """
                     {% endif %}
 
                     {% if item.can_no_veg %}
-                        <div class="opt" style="color:red" onclick="tgl('{{iid}}','生菜番茄不要',0,this)">❌生菜番茄</div>
-                        <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌生菜</div>
-                        <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌番茄</div>
+                        <div class="opt" style="color:red" onclick="tgl('{{iid}}','都不要菜',0,this)">❌都不要菜</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌不加生菜</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌不加番茄</div>
                     {% endif %}
 
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
