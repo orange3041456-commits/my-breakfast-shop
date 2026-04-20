@@ -5,7 +5,7 @@ from collections import Counter
 import json
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v30_all_fixed"
+app.secret_key = "morning_noodle_v32_final_custom"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 BOSS_PASSWORD = "8888" 
@@ -66,8 +66,8 @@ MENU_DATA = {
         {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB}
     ],
     "炒麵系列 (200g)": [
-        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": "【無肉絲】附基本配料"},
-        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "no_meat_opt": True, "sub": "【無肉絲】附基本配料"},
+        {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "no_meat_opt": True, "sub": "【無肉絲】附基本配料"},
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB}, 
         {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB},
         {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB},
@@ -217,12 +217,10 @@ INDEX_HTML = """
                 fn += '+' + o.n; 
                 fp += o.p; 
                 if(pMap[o.n]) fp += pMap[o.n]; 
-                // 只要是「選」或「換」開頭的都視為必要套餐選項
                 if(o.n.includes('選') || o.n.includes('換')) selectedCount++;
             } 
         });
 
-        // 強制檢查套餐選品項邏輯
         if(reqCount > 0) {
             if(n.includes("薯條OR雞塊") && selectedCount < 2) { alert("請務必選擇「品項(薯條/雞塊)」與「飲品」再加入！"); return; }
             if(!n.includes("薯條OR雞塊") && selectedCount < 1) { alert("請先選擇飲品再加入！"); return; }
@@ -271,7 +269,8 @@ INDEX_HTML = """
                     {% if item.can_no_side %}
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加高麗菜',0,this)">不加高麗菜</div>
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加紅蘿蔔',0,this)">不加紅蘿蔔</div>
-                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加肉絲',0,this)">不加肉絲</div>
+                        {# 針對蘑菇麵/黑胡椒麵，不顯示「不加肉絲」 #}
+                        {% if not item.no_meat_opt %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加肉絲',0,this)">不加肉絲</div>{% endif %}
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蒜碎',0,this)">不加蒜碎</div>
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加洋蔥',0,this)">不加洋蔥</div>
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蔥花',0,this)">不加蔥花</div>
