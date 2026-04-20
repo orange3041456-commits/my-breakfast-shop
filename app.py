@@ -4,11 +4,11 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v95_final_v3"
+app.secret_key = "morning_noodle_v95_final_v3041_v2"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
-BOSS_PASSWORD = "8888" 
+BOSS_PASSWORD = "3041" 
 G_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe5HJ_rQDNaSXNo6l38DYMFErzna8Rmqjp8X61cgPZ2d8QOqA/formResponse"
 G_ENTRIES = {"summary": "entry.303092604", "price": "entry.157627510", "time": "entry.1541194223"}
 
@@ -59,18 +59,17 @@ MENU_DATA = {
     ],
     "泡麵系列 (2包)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒泡麵", "price": 80, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣炒泡麵", "price": 85, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "經典沙茶炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}
     ],
     "炒麵系列 (200g)": [
-        # 蘑菇麵與黑胡椒麵重新開啟 has_precision_no 選項
         {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NO_MEAT_NOODLE_SUB},
         {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NO_MEAT_NOODLE_SUB},
         {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}, 
-        {"name": "起司魂炒麵", "price": 80, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
-        {"name": "菜脯辣起司炒麵", "price": 85, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
+        {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
@@ -260,7 +259,6 @@ INDEX_HTML = """
                     {% if item.can_no_crust %}<div class="opt" onclick="tgl('{{iid}}','去邊',0,this)">🍞 去邊</div>{% endif %}
                     {% if item.has_precision_no %}
                         {% for v in no_veg_list %}
-                            {# 如果麵種包含「無肉絲」文字，則跳過顯示「不要肉絲」按鈕 #}
                             {% if not (item.sub and "無肉絲" in item.sub and v == "不要肉絲") %}
                                 <div class="opt no-btn" onclick="tgl('{{iid}}','{{v}}',0,this)">{{v}}</div>
                             {% endif %}
@@ -286,13 +284,32 @@ BOSS_HTML = """
     .o.done{border-left-color:#2ecc71;opacity:0.8;}
     .btn{padding:10px 20px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:8px;}
     .cash{background:#2ecc71;color:#fff;}.line{background:#00b900;color:#fff;}.reset{background:#e74c3c;color:#fff;}
-    @media print { body * { visibility: hidden; } #p-area, #p-area * { visibility: visible; } #p-area { position: absolute; left: 0; top: 0; width: 54mm; font-size: 15px; } }
+    @media print { 
+        body * { visibility: hidden; } 
+        #p-area, #p-area * { visibility: visible; } 
+        #p-area { 
+            position: absolute; left: 0; top: 0; width: 54mm; 
+            text-align: center; font-family: sans-serif;
+            padding: 5mm 0;
+        }
+        #p-area h3 { font-size: 20px; margin: 0; }
+        #p-area h1 { font-size: 42px; margin: 5px 0; }
+        #p-area .info { font-size: 16px; margin-bottom: 10px; }
+        #p-area .items { font-size: 18px; line-height: 1.5; margin: 10px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 10px 0; }
+        #p-area .total { font-size: 22px; font-weight: bold; margin-top: 10px; }
+    }
 </style>
 <script>
     function finish(no, id, m, loc, time, summary, price) {
         if(m==='RESET'){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload()); return; }
         let div = document.createElement('div'); div.id="p-area"; 
-        div.innerHTML = `<h3>晨食麵所</h3><h1 style="font-size:30px;margin:5px 0;">#${no}</h1><p>${time}</p><b>${loc}</b><hr>${summary}<hr><b>總計: $${price} (${m})</b>`;
+        div.innerHTML = `
+            <h3>晨食麵所</h3>
+            <h1>#${no}</h1>
+            <div class="info">${time}<br><b>${loc}</b></div>
+            <div class="items">${summary}</div>
+            <div class="total">總計: $${price}<br>(${m})</div>
+        `;
         document.body.appendChild(div); window.print(); document.body.removeChild(div);
         fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload());
     }
@@ -326,11 +343,11 @@ SUCCESS_HTML = """
 <body style="text-align:center;padding-top:80px;font-family:sans-serif;background:#fdfaf0;">
     <div style="background:#fff;margin:20px;padding:40px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
         <h2 style="color:#2ecc71;">✅ 訂單已送出</h2>
-        <p>您的取餐編號為</p>
-        <h1 style="font-size:80px;margin:20px 0;color:#333;">#{{order_no}}</h1>
-        <p style="color:#888;">請記住編號並至櫃檯結帳</p>
-        <a href="/" style="display:inline-block;margin-top:20px;padding:12px 30px;background:#ffbe00;color:#000;text-decoration:none;border-radius:25px;font-weight:bold;box-shadow:0 2px 5px rgba(0,0,0,0.1);">立即回首頁</a>
-        <div style="margin-top:20px;font-size:13px;color:gray;">5秒後自動跳轉</div>
+        <p style="color:#999; font-size:14px; margin-bottom:5px;">請記住編號</p>
+        <h1 style="font-size:90px; margin:5px 0; color:#333; line-height:1;">#{{order_no}}</h1>
+        <p style="color:#e74c3c; font-size:28px; font-weight:bold; margin:20px 0;">請至櫃檯結帳</p>
+        <a href="/" style="display:inline-block;margin-top:10px;padding:12px 30px;background:#ffbe00;color:#000;text-decoration:none;border-radius:25px;font-weight:bold;box-shadow:0 2px 5px rgba(0,0,0,0.1);">立即回首頁</a>
+        <div style="margin-top:25px;font-size:12px;color:#bbb;">5秒後自動跳轉</div>
     </div>
 </body></html>
 """
