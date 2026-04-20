@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v56_final_list"
+app.secret_key = "morning_noodle_v57_toast_crispy"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -24,7 +24,7 @@ def sync_to_google(summary, price, info, pay_method):
     except: pass
 
 # ==========================================
-# 🍱 [完整菜單資料更新]
+# 🍱 [菜單資料 - 已加入「酥一點」邏輯]
 # ==========================================
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
@@ -70,20 +70,20 @@ MENU_DATA = {
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
-        {"name": "巧克力吐司", "price": 25}, {"name": "巧克力厚片", "price": 30},
-        {"name": "草莓吐司", "price": 25}, {"name": "草莓厚片", "price": 30},
-        {"name": "花生吐司", "price": 25}, {"name": "花生厚片", "price": 30},
-        {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}
+        {"name": "巧克力吐司", "price": 25, "can_crispy": True}, {"name": "巧克力厚片", "price": 30, "can_crispy": True},
+        {"name": "草莓吐司", "price": 25, "can_crispy": True}, {"name": "草莓厚片", "price": 30, "can_crispy": True},
+        {"name": "花生吐司", "price": 25, "can_crispy": True}, {"name": "花生厚片", "price": 30, "can_crispy": True},
+        {"name": "奶酥吐司", "price": 25, "can_crispy": True}, {"name": "奶酥厚片", "price": 30, "can_crispy": True}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
+        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄"}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
@@ -167,7 +167,7 @@ def finish_order():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
-# --- 前台介面 ---
+# --- HTML 模板 (前台) ---
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <style>
@@ -232,6 +232,7 @@ INDEX_HTML = """
                     {% if item.can_add %}<div class="opt" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
                     {% if item.add_meat %}<div class="opt" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
+                    {% if item.can_crispy %}<div class="opt" onclick="tgl('{{iid}}','酥一點',0,this)">🍞 酥一點</div>{% endif %}
 
                     {% if item.can_no_side %}
                         <div class="opt no-side" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
@@ -261,7 +262,7 @@ INDEX_HTML = """
 </body></html>
 """
 
-# --- 老闆後台 ---
+# --- 後台與其餘頁面 ---
 BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
