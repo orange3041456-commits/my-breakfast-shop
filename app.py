@@ -4,8 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v71_mayo_tag"
-
+app.secret_key = "morning_noodle_v73_stats"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -25,11 +24,12 @@ def sync_to_google(summary, price, info, pay_method):
     except: pass
 
 # ==========================================
-# 🍱 [菜單資料]
+# 🍱 [菜單資料] (保持不變)
 # ==========================================
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
+TOAST_SUB = "✅含生菜、番茄、美乃滋"
 
 MENU_DATA = {
     "吃爽組合 (套餐)": [
@@ -71,20 +71,20 @@ MENU_DATA = {
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB}
     ],
     "果醬吐司/厚片": [
-        {"name": "巧克力吐司", "price": 25, "can_crispy": True}, {"name": "巧克力厚片", "price": 30, "can_crispy": True},
-        {"name": "草莓吐司", "price": 25, "can_crispy": True}, {"name": "草莓厚片", "price": 30, "can_crispy": True},
-        {"name": "花生吐司", "price": 25, "can_crispy": True}, {"name": "花生厚片", "price": 30, "can_crispy": True},
-        {"name": "奶酥吐司", "price": 25, "can_crispy": True}, {"name": "奶酥厚片", "price": 30, "can_crispy": True}
+        {"name": "巧克力吐司", "price": 25, "can_crispy": True, "can_no_crust": True}, {"name": "巧克力厚片", "price": 30, "can_crispy": True, "can_no_crust": True},
+        {"name": "草莓吐司", "price": 25, "can_crispy": True, "can_no_crust": True}, {"name": "草莓厚片", "price": 30, "can_crispy": True, "can_no_crust": True},
+        {"name": "花生吐司", "price": 25, "can_crispy": True, "can_no_crust": True}, {"name": "花生厚片", "price": 30, "can_crispy": True, "can_no_crust": True},
+        {"name": "奶酥吐司", "price": 25, "can_crispy": True, "can_no_crust": True}, {"name": "奶酥厚片", "price": 30, "can_crispy": True, "can_no_crust": True}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
-        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
-        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "sub": "✅含生菜、番茄、美乃滋"}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
+        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
@@ -145,15 +145,53 @@ def clear():
     t = sum(i['price'] for i in cart)
     loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
     summary = "<br>".join([f"{n} x{c}" for n,c in Counter([i['name'] for i in cart]).items()])
-    total_income += t
-    history.append({"id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, "time": datetime.datetime.now(pytz.timezone('Asia/Taipei')), "done": False, "pay": "未選"})
+    
+    # 建立歷史紀錄，初始支付與狀態為未選
+    history.append({
+        "id": secrets.token_hex(4), 
+        "loc": loc, 
+        "price": t, 
+        "summary": summary, 
+        "time": datetime.datetime.now(pytz.timezone('Asia/Taipei')), 
+        "done": False, 
+        "pay": "未選",
+        "type": info['type']
+    })
     session['cart'] = [] 
     return render_template_string(SUCCESS_HTML)
 
 @app.route("/boss")
 def boss():
     if request.args.get("pw") != BOSS_PASSWORD: return "Error", 403
-    return render_template_string(BOSS_HTML, total=total_income, logs=history[::-1])
+    
+    # 統計邏輯
+    stats = {
+        "total_count": 0, "total_money": 0,
+        "in_count": 0, "in_money": 0,
+        "out_count": 0, "out_money": 0,
+        "cash_count": 0, "cash_money": 0,
+        "line_count": 0, "line_money": 0
+    }
+    
+    for h in history:
+        if h['done']:
+            stats["total_count"] += 1
+            stats["total_money"] += h['price']
+            if "外帶" in h['loc']:
+                stats["out_count"] += 1
+                stats["out_money"] += h['price']
+            else:
+                stats["in_count"] += 1
+                stats["in_money"] += h['price']
+            
+            if h['pay'] == "現金":
+                stats["cash_count"] += 1
+                stats["cash_money"] += h['price']
+            elif h['pay'] == "LINE Pay":
+                stats["line_count"] += 1
+                stats["line_money"] += h['price']
+
+    return render_template_string(BOSS_HTML, stats=stats, logs=history[::-1])
 
 @app.route("/finish_order", methods=["POST"])
 def finish_order():
@@ -169,7 +207,7 @@ def finish_order():
     return jsonify({"status": "error"}), 404
 
 # ==========================================
-# 📱 [前台頁面] 
+# 📱 [頁面 HTML] (僅列出 BOSS_HTML 有重大更新)
 # ==========================================
 INDEX_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
@@ -232,7 +270,7 @@ INDEX_HTML = """
                     {% if item.add_meat %}<div class="opt" onclick="tgl('{{iid}}','加里肌',25,this)">+里肌 25</div>{% endif %}
                     {% if item.can_spicy %}<div class="opt" onclick="tgl('{{iid}}','特製辣',0,this)">特製辣</div>{% endif %}
                     {% if item.can_crispy %}<div class="opt" onclick="tgl('{{iid}}','酥一點',0,this)">🍞 酥一點</div>{% endif %}
-                    
+                    {% if item.can_no_crust %}<div class="opt" onclick="tgl('{{iid}}','去邊',0,this)">🍞 去邊</div>{% endif %}
                     {% if item.can_no_side %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加高麗菜',0,this)">❌高麗菜</div>
@@ -243,14 +281,11 @@ INDEX_HTML = """
                         <div class="opt" onclick="tgl('{{iid}}','不加蔥花',0,this)">❌蔥花</div>
                         <div class="opt" onclick="tgl('{{iid}}','不加玉米',0,this)">❌玉米</div>
                     {% endif %}
-
                     {% if item.can_no_veg %}
                         <div class="opt" style="color:red" onclick="tgl('{{iid}}','都不要菜',0,this)">❌都不要菜</div>
-                        <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌不加生菜</div>
-                        <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌不加番茄</div>
-                        <div class="opt" onclick="tgl('{{iid}}','不加美乃滋',0,this)">❌美乃滋</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加生菜',0,this)">❌生菜</div>
+                        <div class="opt" onclick="tgl('{{iid}}','不加番茄',0,this)">❌番茄</div>
                     {% endif %}
-
                     {% if item.opts %}{% for grp in item.opts %}{% set gidx=loop.index %}{% for o in grp %}
                         <div class="opt" data-grp="{{iid}}_{{gidx}}" data-val="{{o}}" onclick="tgl('{{iid}}','{{o}}',0,this,'{{gidx}}')">{{o}}</div>
                     {% endfor %}{% endfor %}{% endif %}
@@ -268,6 +303,14 @@ BOSS_HTML = """
     body{font-family:sans-serif;background:#eee;padding:15px;margin-top:70px;}
     .sticky-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #333; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
     .nav-btn { display: block; background: #ffbe00; color: #000; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 18px; }
+    
+    /* 統計區樣式 */
+    .stats-container { background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .stat-card { background: #f8f9fa; padding: 10px; border-radius: 5px; border-top: 3px solid #ffbe00; }
+    .stat-val { font-size: 18px; font-weight: bold; color: #d35400; }
+    .stat-label { font-size: 12px; color: #666; }
+
     .o{background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border-left:8px solid #ffbe00;position:relative;}
     .o.done{border-left-color:#2ecc71;opacity:0.8;}
     .btn{padding:12px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;margin-right:8px;min-width:100px;}
@@ -293,7 +336,33 @@ BOSS_HTML = """
 </script></head>
 <body>
     <div class="sticky-nav no-print"><a href="/" class="nav-btn">⬅️ 一鍵返回「前台點餐」</a></div>
-    <div class="no-print"><h3>💰 今日總營收: ${{total}}</h3></div>
+    
+    <div class="stats-container no-print">
+        <div style="font-weight:bold; font-size:18px; border-bottom:1px solid #eee; padding-bottom:5px;">📈 今日營運概況 (已結帳)</div>
+        <div class="stats-grid">
+            <div class="stat-card" style="grid-column: span 2; border-color: #e74c3c;">
+                <div class="stat-label">總營業額 / 總單數</div>
+                <div class="stat-val">${{stats.total_money}} <span style="font-size:14px; color:#666;">({{stats.total_count}} 單)</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">🏠 內用統計</div>
+                <div class="stat-val">${{stats.in_money}} <span style="font-size:12px; color:#666;">({{stats.in_count}}單)</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">🥡 外帶統計</div>
+                <div class="stat-val">${{stats.out_money}} <span style="font-size:12px; color:#666;">({{stats.out_count}}單)</span></div>
+            </div>
+            <div class="stat-card" style="border-color: #2ecc71;">
+                <div class="stat-label">💵 現金收款</div>
+                <div class="stat-val">${{stats.cash_money}} <span style="font-size:12px; color:#666;">({{stats.cash_count}}單)</span></div>
+            </div>
+            <div class="stat-card" style="border-color: #00b900;">
+                <div class="stat-label">📲 LINE Pay</div>
+                <div class="stat-val">${{stats.line_money}} <span style="font-size:12px; color:#666;">({{stats.line_count}}單)</span></div>
+            </div>
+        </div>
+    </div>
+
 {% for h in logs %}
 <div class="o {{ 'done' if h.done else '' }}">
     <button class="print-btn no-print" onclick="printOnly('{{h.loc}}','{{h.time.strftime('%m/%d %H:%M:%S')}}','{{h.summary|safe}}','{{h.price}}')">🖨️ 補印</button>
