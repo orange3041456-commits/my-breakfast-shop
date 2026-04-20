@@ -4,13 +4,16 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v94_precision_custom"
+app.secret_key = "morning_noodle_v95_order_no"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
 BOSS_PASSWORD = "8888" 
 G_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe5HJ_rQDNaSXNo6l38DYMFErzna8Rmqjp8X61cgPZ2d8QOqA/formResponse"
 G_ENTRIES = {"summary": "entry.303092604", "price": "entry.157627510", "time": "entry.1541194223"}
+
+# 全域訂單計數器
+order_counter = 1
 
 def sync_to_google(summary, price, info, pay_method):
     tw_tz = pytz.timezone('Asia/Taipei')
@@ -28,8 +31,6 @@ DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶(+5)", "換鮮奶茶(+15)"]
 DRINK_PRICE_MAP = {"換奶茶(+5)": 5, "換鮮奶茶(+15)": 15}
 NOODLE_SUB = "配料：高麗菜、紅蘿蔔、肉絲、蒜碎、洋蔥、蔥花、玉米"
 TOAST_SUB = "✅含生菜、番茄、美乃滋"
-
-# 定義排除配料清單
 EXCLUDE_VEG_OPTS = ["不要高麗菜", "不要紅蘿蔔", "不要肉絲", "不要蒜碎", "不要洋蔥", "不要蔥花", "不要玉米"]
 
 MENU_DATA = {
@@ -139,20 +140,25 @@ def view_cart():
 
 @app.route("/clear", methods=["POST"])
 def clear():
+    global order_counter
     cart = session.get('cart', [])
     if not cart: return redirect("/")
+    
     info = session.get('info', {"type": "外帶", "table": ""})
     t = sum(i['price'] for i in cart)
     loc = f"{info['type']}" + (f"-{info['table']}桌" if info['table'] else "")
     summary = "<br>".join([f"{n} x{c}" for n,c in Counter([i['name'] for i in cart]).items()])
     
+    # 建立訂單編號
+    current_no = order_counter
     history.append({
-        "id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, 
+        "no": current_no, "id": secrets.token_hex(4), "loc": loc, "price": t, "summary": summary, 
         "time": datetime.datetime.now(pytz.timezone('Asia/Taipei')), 
         "done": False, "pay": "未選"
     })
+    order_counter += 1 # 編號累加
     session['cart'] = [] 
-    return render_template_string(SUCCESS_HTML)
+    return render_template_string(SUCCESS_HTML, order_no=current_no)
 
 @app.route("/boss")
 def boss():
@@ -176,7 +182,7 @@ def finish_order():
         if method == "RESET": target['done'], target['pay'] = False, "未選"
         else:
             target['done'], target['pay'] = True, method
-            sync_to_google(target['summary'], target['price'], target['loc'], method)
+            sync_to_google(f"單號#{target['no']} | {target['summary']}", target['price'], target['loc'], method)
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 404
 
@@ -257,7 +263,6 @@ INDEX_HTML = """
 </body></html>
 """
 
-# (其餘 BOSS_HTML, CART_HTML, SUCCESS_HTML 保持原本功能，僅微調細節)
 BOSS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
@@ -269,9 +274,10 @@ BOSS_HTML = """
     @media print { body * { visibility: hidden; } #p-area, #p-area * { visibility: visible; } #p-area { position: absolute; left: 0; top: 0; width: 54mm; font-size: 15px; } }
 </style>
 <script>
-    function finish(id, m, loc, time, summary, price) {
+    function finish(no, id, m, loc, time, summary, price) {
         if(m==='RESET'){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload()); return; }
-        let div = document.createElement('div'); div.id="p-area"; div.innerHTML = `<h3>晨食麵所</h3><p>${time}</p><b>${loc}</b><hr>${summary}<hr><b>總計: $${price} (${m})</b>`;
+        let div = document.createElement('div'); div.id="p-area"; 
+        div.innerHTML = `<h3>晨食麵所</h3><h1 style="font-size:30px;margin:5px 0;">#${no}</h1><p>${time}</p><b>${loc}</b><hr>${summary}<hr><b>總計: $${price} (${m})</b>`;
         document.body.appendChild(div); window.print(); document.body.removeChild(div);
         fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload());
     }
@@ -280,10 +286,10 @@ BOSS_HTML = """
     <div style="display:flex;justify-content:space-between;"><a href="/">⬅️ 前台</a><a href="/boss_logout" style="color:red;">登出</a></div>
     <h3>營收: ${{stats.total_money}} ({{stats.total_count}}單)</h3><hr>
     {% for h in logs %}<div class="o {{ 'done' if h.done else '' }}">
-        <div><b>{{h.loc}}</b> | {{h.time.strftime('%H:%M')}}</div>
+        <div style="display:flex;justify-content:space-between"><b>#{{h.no}} | {{h.loc}}</b><span>{{h.time.strftime('%H:%M')}}</span></div>
         <div style="padding:5px 0;">{{h.summary|safe}}</div>
         <div style="font-size:18px;color:#e67e22;font-weight:bold;">${{h.price}}</div>
-        <div style="margin-top:8px;">{% if not h.done %}<button class="btn cash" onclick="finish('{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%H:%M')}}','{{h.summary}}','{{h.price}}')">現金</button><button class="btn line" onclick="finish('{{h.id}}','Line','{{h.loc}}','{{h.time.strftime('%H:%M')}}','{{h.summary}}','{{h.price}}')">Line</button>{% else %}✅ {{h.pay}} <button class="btn reset" onclick="finish('{{h.id}}','RESET')">重設</button>{% endif %}</div>
+        <div style="margin-top:8px;">{% if not h.done %}<button class="btn cash" onclick="finish('{{h.no}}','{{h.id}}','現金','{{h.loc}}','{{h.time.strftime('%H:%M')}}','{{h.summary}}','{{h.price}}')">現金</button><button class="btn line" onclick="finish('{{h.no}}','{{h.id}}','Line','{{h.loc}}','{{h.time.strftime('%H:%M')}}','{{h.summary}}','{{h.price}}')">Line</button>{% else %}✅ {{h.pay}} <button class="btn reset" onclick="finish('{{h.no}}','{{h.id}}','RESET')">重設</button>{% endif %}</div>
     </div>{% endfor %}
 </body></html>
 """
@@ -296,7 +302,16 @@ CART_HTML = """
 """
 
 SUCCESS_HTML = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 3000)</script></head><body style="text-align:center;padding-top:100px;font-family:sans-serif;"><h1>✅ 訂單已送出</h1><p>請至櫃檯結帳</p></body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 10000)</script></head>
+<body style="text-align:center;padding-top:80px;font-family:sans-serif;background:#fdfaf0;">
+    <div style="background:#fff;margin:20px;padding:40px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+        <h2 style="color:#2ecc71;">✅ 訂單已送出</h2>
+        <p>您的取餐編號為</p>
+        <h1 style="font-size:80px;margin:20px 0;color:#333;">#{{order_no}}</h1>
+        <p style="color:#888;">請記住編號並至櫃檯結帳</p>
+        <div style="margin-top:30px;font-size:13px;color:gray;">10秒後自動回首頁</div>
+    </div>
+</body></html>
 """
 
 if __name__ == "__main__":
