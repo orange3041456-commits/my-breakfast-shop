@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v50_final_integrated"
+app.secret_key = "morning_noodle_v51_fixed_options"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -24,7 +24,7 @@ def sync_to_google(summary, price, info, pay_method):
     except: pass
 
 # ==========================================
-# 🍱 [完整菜單資料整合]
+# 🍱 [完整菜單資料整合 - 已修正配料與選項]
 # ==========================================
 DRINK_OPTS = ["選紅茶", "選冷泡茶", "換奶茶", "換鮮奶茶"]
 DRINK_PRICE_MAP = {"換奶茶": 5, "換鮮奶茶": 15}
@@ -39,20 +39,20 @@ MENU_DATA = {
         {"name": "巧克力薯餅吐司+飲品", "price": 50, "can_add": True, "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP}
     ],
     "蛋餅類": [
-        {"name": "原味蛋餅", "price": 30, "can_add": True, "add_meat": True, "can_spicy": True}, 
-        {"name": "蔥香蛋餅", "price": 35, "can_add": True, "add_meat": True, "can_spicy": True}, 
-        {"name": "肉鬆蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True}, 
-        {"name": "起司蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "蔬菜蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "火腿蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "香煎培根蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "熱狗蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "塔香蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "玉米蛋餅", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "add_meat": True, "can_spicy": True},
-        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True, "can_spicy": True}
+        {"name": "原味蛋餅", "price": 30, "can_add": True, "add_meat": True}, 
+        {"name": "蔥香蛋餅", "price": 35, "can_add": True, "add_meat": True}, 
+        {"name": "肉鬆蛋餅", "price": 40, "can_add": True, "add_meat": True}, 
+        {"name": "起司蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "蔬菜蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "火腿蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "香煎培根蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "熱狗蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "塔香蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "玉米蛋餅", "price": 40, "can_add": True, "add_meat": True},
+        {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True, "add_meat": True},
+        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "add_meat": True},
+        {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "add_meat": True},
+        {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True}
     ],
     "泡麵系列 (2包)": [
         {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "can_no_side": True, "sub": NOODLE_SUB}, 
@@ -76,14 +76,14 @@ MENU_DATA = {
         {"name": "奶酥吐司", "price": 25}, {"name": "奶酥厚片", "price": 30}
     ],
     "烤吐司系列": [
-        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "sub": "⚠️預設無生菜、番茄"},
-        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
-        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}, 
-        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_spicy": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}
+        {"name": "煎蛋吐司", "price": 35, "can_add": True, "add_meat": True, "can_crispy": True, "sub": "⚠️預設無生菜、番茄"},
+        {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"},
+        {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}, 
+        {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_crispy": True, "can_no_veg": True, "sub": "✅含生菜、番茄"}
     ],
     "單點小點": [
         {"name": "荷包蛋", "price": 15}, {"name": "玉米蛋", "price": 35},
@@ -240,7 +240,9 @@ INDEX_HTML = """
                     {% if item.can_no_side %}
                         <div class="opt no-side" data-item="{{iid}}" onclick="tgl('{{iid}}','配料都不要',0,this)">配料都不要</div>
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加高麗菜',0,this)">❌高麗菜</div>
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加紅蘿蔔',0,this)">❌紅蘿蔔</div>
                         {% if not item.no_meat_opt %}<div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加肉絲',0,this)">❌肉絲</div>{% endif %}
+                        <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蒜碎',0,this)">❌蒜碎</div>
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加洋蔥',0,this)">❌洋蔥</div>
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加蔥花',0,this)">❌蔥花</div>
                         <div class="opt" data-item="{{iid}}" onclick="tgl('{{iid}}','不加玉米',0,this)">❌玉米</div>
