@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v95_final_v3041_v3"
+app.secret_key = "morning_noodle_v95_final_v3041_v5"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -36,8 +36,10 @@ EXCLUDE_VEG_OPTS = ["不要高麗菜", "不要紅蘿蔔", "不要肉絲", "不�
 MENU_DATA = {
     "吃爽組合 (套餐)": [
         {"name": "招牌炒泡麵+蛋+里肌+飲品", "price": 120, "sub": "⚠️ 含蛋、里肌，請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP, "rec": True},
-        {"name": "蘑菇麵+蛋+熱狗+飲品", "price": 100, "sub": "⚠️ 含蛋、熱狗(3支)，請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
-        {"name": "黑胡椒麵+蛋+熱狗+飲品", "price": 100, "sub": "⚠️ 含蛋、熱狗(3支)，請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
+        {"name": "蘑菇麵+蛋+熱狗+飲品", "price": 99, "sub": "⚠️ 含蛋、熱狗(3支)，請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
+        {"name": "黑胡椒麵+蛋+熱狗+飲品", "price": 99, "sub": "⚠️ 含蛋、熱狗(3支)，請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
+        {"name": "特調鮪魚蛋餅+飲品", "price": 70, "sub": "⚠️ 請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP, "rec": True},
+        {"name": "辣菜脯起司蛋餅+飲品", "price": 60, "sub": "⚠️ 請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP, "rec": True},
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "⚠️ 請選品項+飲品", "opts": [["選薯條", "選雞塊"], DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
         {"name": "肉蛋吐司+紅茶", "price": 60, "can_no_crust": True},
         {"name": "熱狗(3支)+蛋+飲品", "price": 50, "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
@@ -56,7 +58,7 @@ MENU_DATA = {
         {"name": "塔香蛋餅", "price": 40, "can_add": True, "add_meat": True},
         {"name": "玉米蛋餅", "price": 40, "can_add": True, "add_meat": True},
         {"name": "酥脆薯餅蛋餅", "price": 45, "can_add": True, "add_meat": True},
-        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "add_meat": True},
+        {"name": "特調鮪魚蛋餅", "price": 50, "can_add": True, "add_meat": True, "rec": True},
         {"name": "里肌肉蛋餅", "price": 50, "can_add": True, "add_meat": True},
         {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True, "rec": True}
     ],
@@ -86,7 +88,7 @@ MENU_DATA = {
         {"name": "火腿吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
         {"name": "培根吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
         {"name": "麥香雞吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
-        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
+        {"name": "鮪魚吐司", "price": 50, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB, "rec": True},
         {"name": "薯餅吐司", "price": 40, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB},
         {"name": "里肌吐司", "price": 55, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB}, 
         {"name": "卡啦雞腿吐司", "price": 60, "can_add": True, "add_meat": True, "can_no_veg": True, "can_crispy": True, "can_no_crust": True, "sub": TOAST_SUB}
