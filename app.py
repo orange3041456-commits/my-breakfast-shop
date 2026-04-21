@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v95_final_v3041_v2"
+app.secret_key = "morning_noodle_v95_final_v3041_rec"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -35,6 +35,9 @@ EXCLUDE_VEG_OPTS = ["不要高麗菜", "不要紅蘿蔔", "不要肉絲", "不�
 
 MENU_DATA = {
     "吃爽組合 (套餐)": [
+        {"name": "招牌炒泡麵+蛋+里肌+飲品", "price": 120, "sub": "⚠️ 含蛋、里肌，請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP, "rec": True},
+        {"name": "蘑菇麵+蛋+熱狗+飲品", "price": 99, "sub": "⚠️ 含蛋、熱狗(3支)，請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
+        {"name": "黑胡椒麵+蛋+熱狗+飲品", "price": 99, "sub": "⚠️ 含蛋、熱狗(3支)，請選飲品", "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
         {"name": "薯條OR雞塊+飲品", "price": 60, "sub": "⚠️ 請選品項+飲品", "opts": [["選薯條", "選雞塊"], DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
         {"name": "肉蛋吐司+紅茶", "price": 60, "can_no_crust": True},
         {"name": "熱狗(3支)+蛋+飲品", "price": 50, "opts": [DRINK_OPTS], "price_map": DRINK_PRICE_MAP},
@@ -58,7 +61,7 @@ MENU_DATA = {
         {"name": "辣菜脯里肌蛋餅", "price": 65, "can_add": True, "add_meat": True}
     ],
     "泡麵系列 (2包)": [
-        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}, 
+        {"name": "招牌炒泡麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB, "rec": True}, 
         {"name": "起司魂炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "椒麻炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "菜脯辣炒泡麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
@@ -67,7 +70,7 @@ MENU_DATA = {
     "炒麵系列 (200g)": [
         {"name": "蘑菇麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NO_MEAT_NOODLE_SUB},
         {"name": "黑胡椒麵", "price": 55, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NO_MEAT_NOODLE_SUB},
-        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}, 
+        {"name": "招牌爆香炒麵", "price": 70, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB, "rec": True}, 
         {"name": "起司魂炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "菜脯辣起司炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB},
         {"name": "經典沙茶炒麵", "price": 75, "can_add": True, "add_meat": True, "can_spicy": True, "has_precision_no": True, "sub": NOODLE_SUB}
@@ -210,6 +213,7 @@ INDEX_HTML = """
     .opt.no-btn { color: #e74c3c; border-color: #fbd9d6; }
     .opt.no-btn.active { background: #e74c3c; color: #fff; }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+    .badge { background: #ff4d4f; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; }
     .boss-back { position: fixed; top: 10px; right: 10px; background: #e74c3c; color: #fff; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; z-index: 101; font-weight: bold; animation: blink 2s infinite; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
     @keyframes blink { 50% { opacity: 0.6; } }
 </style>
@@ -249,7 +253,7 @@ INDEX_HTML = """
         {% for item in items %}
             {% set iid = cat[0] ~ loop.index0 %}
             <div class="card">
-                <div class="row"><div style="flex:1"><strong>{{item.name}}</strong>{% if item.sub %}<div style="font-size:11px;color:gray">{{item.sub}}</div>{% endif %}<div style="color:#e67e22;font-weight:bold">${{item.price}}</div></div>
+                <div class="row"><div style="flex:1"><strong>{{item.name}}</strong>{% if item.rec %}<span class="badge">⭐ 推薦</span>{% endif %}{% if item.sub %}<div style="font-size:11px;color:gray">{{item.sub}}</div>{% endif %}<div style="color:#e67e22;font-weight:bold">${{item.price}}</div></div>
                 <button class="add" data-id="{{iid}}" data-name="{{item.name}}" data-price="{{item.price}}" data-req="{{1 if item.opts else 0}}" data-pmap='{{item.price_map|tojson|safe if item.price_map else "{}"}}' onclick="buy(this)">加入</button></div>
                 <div class="grid">
                     {% if item.can_add %}<div class="opt" onclick="tgl('{{iid}}','加蛋',15,this)">+蛋 15</div><div class="opt" onclick="tgl('{{iid}}','加起司',15,this)">+起司 15</div>{% endif %}
@@ -303,13 +307,7 @@ BOSS_HTML = """
     function finish(no, id, m, loc, time, summary, price) {
         if(m==='RESET'){ fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method=RESET"}).then(()=>location.reload()); return; }
         let div = document.createElement('div'); div.id="p-area"; 
-        div.innerHTML = `
-            <h3>晨食麵所</h3>
-            <h1>#${no}</h1>
-            <div class="info">${time}<br><b>${loc}</b></div>
-            <div class="items">${summary}</div>
-            <div class="total">總計: $${price}<br>(${m})</div>
-        `;
+        div.innerHTML = `<h3>晨食麵所</h3><h1>#${no}</h1><div class="info">${time}<br><b>${loc}</b></div><div class="items">${summary}</div><div class="total">總計: $${price}<br>(${m})</div>`;
         document.body.appendChild(div); window.print(); document.body.removeChild(div);
         fetch('/finish_order',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:"id="+id+"&method="+m}).then(()=>location.reload());
     }
@@ -342,12 +340,17 @@ SUCCESS_HTML = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><script>setTimeout(()=>location.href='/', 5000)</script></head>
 <body style="text-align:center;padding-top:80px;font-family:sans-serif;background:#fdfaf0;">
     <div style="background:#fff;margin:20px;padding:40px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
-        <h2 style="color:#2ecc71;">✅ 訂單已送出</h2>
-        <p style="color:#999; font-size:14px; margin-bottom:5px;">請記住編號</p>
-        <h1 style="font-size:90px; margin:5px 0; color:#333; line-height:1;">#{{order_no}}</h1>
-        <p style="color:#e74c3c; font-size:28px; font-weight:bold; margin:20px 0;">請至櫃檯結帳</p>
-        <a href="/" style="display:inline-block;margin-top:10px;padding:12px 30px;background:#ffbe00;color:#000;text-decoration:none;border-radius:25px;font-weight:bold;box-shadow:0 2px 5px rgba(0,0,0,0.1);">立即回首頁</a>
-        <div style="margin-top:25px;font-size:12px;color:#bbb;">5秒後自動跳轉</div>
+        <h2 style="color:#2ecc71; margin-bottom:10px;">✅ 訂單已送出</h2>
+        <p style="font-size:13px; color:gray; margin-bottom:5px;">您的取餐編號為</p>
+        <h1 style="font-size:85px; margin:5px 0; color:#333; font-weight:bold;">#{{order_no}}</h1>
+        <p style="font-size:12px; color:#999; margin-bottom:15px;">(請記住編號)</p>
+        <div style="background:#fff5f5; border:2px solid #ff4d4f; padding:15px; border-radius:15px; display:inline-block;">
+            <h2 style="font-size:32px; color:#ff4d4f; margin:0; font-weight:900;">📍 前往櫃檯結帳</h2>
+        </div>
+        <div style="margin-top:30px;">
+            <a href="/" style="display:inline-block;padding:12px 30px;background:#ffbe00;color:#000;text-decoration:none;border-radius:25px;font-weight:bold;box-shadow:0 2px 5px rgba(0,0,0,0.1);">立即回首頁</a>
+            <p style="margin-top:20px;font-size:12px;color:#bbb;">5秒後自動跳轉</p>
+        </div>
     </div>
 </body></html>
 """
