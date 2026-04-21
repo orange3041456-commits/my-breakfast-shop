@@ -4,7 +4,7 @@ import pytz
 from collections import Counter
 
 app = Flask(__name__)
-app.secret_key = "morning_noodle_v95_final_v3041_v5"
+app.secret_key = "morning_noodle_v95_final_v3041_v6"
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # --- 設定區 ---
@@ -294,15 +294,15 @@ BOSS_HTML = """
         body * { visibility: hidden; } 
         #p-area, #p-area * { visibility: visible; } 
         #p-area { 
-            position: absolute; left: 0; top: 0; width: 54mm; 
+            position: absolute; left: 0; top: 0; width: 80mm; 
             text-align: center; font-family: sans-serif;
             padding: 5mm 0;
         }
-        #p-area h3 { font-size: 20px; margin: 0; }
-        #p-area h1 { font-size: 42px; margin: 5px 0; }
-        #p-area .info { font-size: 16px; margin-bottom: 10px; }
-        #p-area .items { font-size: 18px; line-height: 1.5; margin: 10px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 10px 0; }
-        #p-area .total { font-size: 22px; font-weight: bold; margin-top: 10px; }
+        #p-area h3 { font-size: 24px; margin: 0; }
+        #p-area h1 { font-size: 60px; margin: 5px 0; }
+        #p-area .info { font-size: 20px; margin-bottom: 15px; }
+        #p-area .items { font-size: 22px; line-height: 1.4; margin: 15px 0; border-top: 2px dashed #000; border-bottom: 2px dashed #000; padding: 15px 0; text-align: left; padding-left: 5mm; }
+        #p-area .total { font-size: 28px; font-weight: bold; margin-top: 15px; }
     }
 </style>
 <script>
